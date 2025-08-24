@@ -1,7 +1,22 @@
+using Microsoft.EntityFrameworkCore;
+using Inmobiliaria.Data;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Configura la conexión a la base de datos con MySQL
+builder.Services.AddDbContext<InmobiliariaContext>(options =>
+{
+    // Obtiene la cadena de conexión del archivo appsettings.json
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    var serverVersion = new MySqlServerVersion(new Version(8, 0, 21));
+
+    options.UseMySql(connectionString, serverVersion);
+});
 
 var app = builder.Build();
 
@@ -22,6 +37,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Propietario}/{action=Index}/{id?}");
 
 app.Run();

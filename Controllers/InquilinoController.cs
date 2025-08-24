@@ -1,25 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
-using Inmobiliaria.Data; // Asegúrate de que este sea el namespace de tu contexto
+using Inmobiliaria.Data;
 using Inmobiliaria.Models;
 using System.Linq;
 
 namespace Inmobiliaria.Controllers
 {
-    public class PropietarioController : Controller
+    public class InquilinoController : Controller
     {
         private readonly InmobiliariaContext _context;
 
-        public PropietarioController(InmobiliariaContext context)
+        public InquilinoController(InmobiliariaContext context)
         {
             _context = context;
         }
 
         public IActionResult Index()
         {
-            // Obtiene la lista de propietario de la base de datos
-            var lista = _context.Propietario.ToList();
-
-            // Pasa la lista de propietario a la vista
+            var lista = _context.Inquilino.ToList();
             return View(lista);
         }
 
@@ -30,15 +27,15 @@ namespace Inmobiliaria.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Propietario propietario)
+        public IActionResult Create(Inquilino inquilino)
         {
             if (ModelState.IsValid)
             {
-                _context.Propietario.Add(propietario);
+                _context.Inquilino.Add(inquilino);
                 _context.SaveChanges();
                 return RedirectToAction(nameof(Index));
             }
-            return View(propietario);
+            return View(inquilino);
         }
 
         public IActionResult Delete(int? id)
@@ -48,23 +45,23 @@ namespace Inmobiliaria.Controllers
                 return NotFound();
             }
 
-            var propietario = _context.Propietario.FirstOrDefault(m => m.Id == id);
-            if (propietario == null)
+            var inquilino = _context.Inquilino.FirstOrDefault(m => m.Id == id);
+            if (inquilino == null)
             {
                 return NotFound();
             }
 
-            return View(propietario);
+            return View(inquilino);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            var propietario = _context.Propietario.Find(id);
-            if (propietario != null)
+            var inquilino = _context.Inquilino.Find(id);
+            if (inquilino != null)
             {
-                _context.Propietario.Remove(propietario);
+                _context.Inquilino.Remove(inquilino);
                 _context.SaveChanges();
             }
             return RedirectToAction(nameof(Index));

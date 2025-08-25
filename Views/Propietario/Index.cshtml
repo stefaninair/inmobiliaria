@@ -7,7 +7,7 @@
 <h1>Listado de Propietarios</h1>
 
 <p>
-    <a asp-action="Create">Crear Nuevo</a>
+    <a asp-action="Create" class="btn btn-primary">Crear Propietario</a>
 </p>
 
 <table class="table">
@@ -27,6 +27,9 @@
             </th>
             <th>
                 Email
+            </th>
+            <th>
+                Direccion
             </th>
             <th></th>
         </tr>
@@ -50,7 +53,11 @@
                     @Html.DisplayFor(modelItem => item.Email)
                 </td>
                 <td>
-                    <a asp-action="Delete" asp-route-id="@item.Id">Eliminar</a>
+                    @Html.DisplayFor(modelItem => item.Direccion)
+                </td>
+                <td>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Eliminar</a>
                 </td>
             </tr>
         }

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Inmobiliaria.Data;
 using Inmobiliaria.Models;
@@ -19,7 +20,7 @@ namespace Inmobiliaria.Controllers
             var lista = _context.Inquilino.ToList();
             return View(lista);
         }
-
+        //Crear
         public IActionResult Create()
         {
             return View();
@@ -37,7 +38,7 @@ namespace Inmobiliaria.Controllers
             }
             return View(inquilino);
         }
-
+        //Eliminar
         public IActionResult Delete(int? id)
         {
             if (id == null)
@@ -66,5 +67,52 @@ namespace Inmobiliaria.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+
+        //Editar 
+        
+        public IActionResult Edit(int id)
+        {
+            var inquilino = _context.Inquilino.Find(id);
+            if (inquilino == null)
+            {
+                return NotFound();
+            }
+            return View(inquilino);
+        }
+
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(int id, Inquilino inquilino)
+        {
+            if (id != inquilino.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(inquilino);
+                    _context.SaveChanges();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Inquilino.Any(e => e.Id == id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(inquilino);
+        }
     }
+
 }

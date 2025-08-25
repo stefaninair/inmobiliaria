@@ -1,13 +1,13 @@
 @model IEnumerable<Inmobiliaria.Models.Inquilino>
 
 @{
-    ViewData["Title"] = "Inquilinos";
+    ViewData["Title"] = "Listado de Inquilinos";
 }
 
-<h1>Inquilinos</h1>
+<h1>Listado de Inquilinos</h1>
 
 <p>
-    <a asp-action="Create">Agregar nuevo inquilino</a>
+    <a asp-action="Create" class="btn btn-primary">Crear Inquilino</a>
 </p>
 
 <table class="table">
@@ -15,6 +15,7 @@
         <tr>
             <th>DNI</th>
             <th>Nombre</th>
+            <th>Apellido</th>
             <th>Email</th>
             <th>Teléfono</th>
             <th></th>
@@ -25,11 +26,13 @@
     {
         <tr>
             <td>@item.DNI</td>
-            <td>@item.NombreCompleto</td>
+            <td>@item.Nombre</td>
+            <td>@item.Apellido</td>
             <td>@item.Email</td>
             <td>@item.Telefono</td>
             <td>
-                <a asp-action="Delete" asp-route-id="@item.Id">Eliminar</a>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>
     }

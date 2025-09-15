@@ -1,22 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using Inmobiliaria.Data;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
+using Inmobiliaria.Models;
+using MySql.Data.MySqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Configura la conexión a la base de datos con MySQL
-builder.Services.AddDbContext<InmobiliariaContext>(options =>
-{
-    // Obtiene la cadena de conexión del archivo appsettings.json
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    var serverVersion = new MySqlServerVersion(new Version(8, 0, 21));
-
-    options.UseMySql(connectionString, serverVersion);
-});
+// Inyección de dependencias para el repositorio de Propietarios y Inquilinos
+builder.Services.AddSingleton<RepositorioPropietario>();
+builder.Services.AddSingleton<RepositorioInquilino>();
 
 var app = builder.Build();
 
@@ -24,7 +16,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

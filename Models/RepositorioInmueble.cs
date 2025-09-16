@@ -7,9 +7,12 @@ using System;
 
 namespace Inmobiliaria.Models
 {
+
+
     public class RepositorioInmueble
     {
         private readonly string connectionString;
+
 
         public RepositorioInmueble(IConfiguration configuration)
         {
@@ -20,6 +23,7 @@ namespace Inmobiliaria.Models
             }
             this.connectionString = connStr;
         }
+
 
         public List<Inmueble> ObtenerTodos()
         {
@@ -35,18 +39,25 @@ namespace Inmobiliaria.Models
                     {
                         while (reader.Read())
                         {
+                            // Se lee el Id del Inmueble correctamente.
+                            int inmuebleId = reader.IsDBNull(reader.GetOrdinal("Id")) ? 0 : reader.GetInt32("Id");
+
+                            // Se lee el Id del Propietario correctamente.
+                            int propietarioId = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId");
+
                             res.Add(new Inmueble
                             {
-                                Id = reader.IsDBNull(reader.GetOrdinal("Id")) ? 0 : reader.GetInt32("Id"),
+                                Id = inmuebleId,
                                 Direccion = reader.IsDBNull(reader.GetOrdinal("Direccion")) ? "" : reader.GetString("Direccion"),
                                 Ambientes = reader.IsDBNull(reader.GetOrdinal("Ambientes")) ? 0 : reader.GetInt32("Ambientes"),
                                 Superficie = reader.IsDBNull(reader.GetOrdinal("Superficie")) ? 0 : reader.GetInt32("Superficie"),
                                 Latitud = reader.IsDBNull(reader.GetOrdinal("Latitud")) ? 0 : reader.GetDecimal("Latitud"),
                                 Longitud = reader.IsDBNull(reader.GetOrdinal("Longitud")) ? 0 : reader.GetDecimal("Longitud"),
-                                PropietarioId = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId"),
+                                PropietarioId = propietarioId,
+                                // Se crea el objeto Duenio y se asigna su Id directamente del valor leído.
                                 Duenio = new Propietario
                                 {
-                                    Id = reader.IsDBNull(reader.GetOrdinal("P.Id")) ? 0 : reader.GetInt32("P.Id"),
+                                    Id = propietarioId,
                                     Nombre = reader.IsDBNull(reader.GetOrdinal("Nombre")) ? "" : reader.GetString("Nombre"),
                                     Apellido = reader.IsDBNull(reader.GetOrdinal("Apellido")) ? "" : reader.GetString("Apellido"),
                                 },
@@ -58,14 +69,13 @@ namespace Inmobiliaria.Models
             }
             return res;
         }
-
         public Inmueble? ObtenerPorId(int id)
         {
             Inmueble? i = null;
             using (var connection = new MySqlConnection(connectionString))
             {
                 var sql = "SELECT I.Id, I.Direccion, I.Ambientes, I.Superficie, I.Latitud, I.Longitud, I.PropietarioId, I.Habilitado, " +
-                          "P.Id, P.Nombre, P.Apellido FROM Inmuebles I INNER JOIN Propietarios P ON I.PropietarioId = P.Id WHERE I.Id = @id";
+                     "P.Id AS PropietarioId, P.Nombre, P.Apellido FROM Inmuebles I INNER JOIN Propietarios P ON I.PropietarioId = P.Id WHERE I.Id = @id";
                 using (var command = new MySqlCommand(sql, connection))
                 {
                     command.Parameters.AddWithValue("@id", id);
@@ -85,7 +95,7 @@ namespace Inmobiliaria.Models
                                 PropietarioId = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId"),
                                 Duenio = new Propietario
                                 {
-                                    Id = reader.IsDBNull(reader.GetOrdinal("P.Id")) ? 0 : reader.GetInt32("P.Id"),
+                                    Id = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId"),
                                     Nombre = reader.IsDBNull(reader.GetOrdinal("Nombre")) ? "" : reader.GetString("Nombre"),
                                     Apellido = reader.IsDBNull(reader.GetOrdinal("Apellido")) ? "" : reader.GetString("Apellido"),
                                 },
@@ -104,8 +114,8 @@ namespace Inmobiliaria.Models
             using (var connection = new MySqlConnection(connectionString))
             {
                 var sql = "INSERT INTO Inmuebles (Direccion, Ambientes, Superficie, Latitud, Longitud, PropietarioId, Habilitado) " +
-                          "VALUES (@direccion, @ambientes, @superficie, @latitud, @longitud, @propietarioId, @habilitado);" +
-                          "SELECT LAST_INSERT_ID();";
+                     "VALUES (@direccion, @ambientes, @superficie, @latitud, @longitud, @propietarioId, @habilitado);" +
+                     "SELECT LAST_INSERT_ID();";
                 using (var command = new MySqlCommand(sql, connection))
                 {
                     command.Parameters.AddWithValue("@direccion", i.Direccion);
@@ -161,7 +171,7 @@ namespace Inmobiliaria.Models
             }
             return filas;
         }
-        
+
 
     }
 }

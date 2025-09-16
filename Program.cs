@@ -9,6 +9,7 @@ builder.Services.AddControllersWithViews();
 // Inyección de dependencias para el repositorio de Propietarios y Inquilinos
 builder.Services.AddSingleton<RepositorioPropietario>();
 builder.Services.AddSingleton<RepositorioInquilino>();
+builder.Services.AddSingleton<RepositorioInmueble>();
 
 var app = builder.Build();
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 25-08-2025 a las 07:47:56
+-- Tiempo de generación: 16-09-2025 a las 10:13:34
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `inmobiliaria`
 --
-CREATE DATABASE IF NOT EXISTS `inmobiliaria` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `inmobiliaria`;
 
 -- --------------------------------------------------------
 
@@ -29,7 +27,6 @@ USE `inmobiliaria`;
 -- Estructura de tabla para la tabla `contrato`
 --
 
-DROP TABLE IF EXISTS `contrato`;
 CREATE TABLE `contrato` (
   `Id` int(11) NOT NULL,
   `MontoMensual` decimal(10,2) NOT NULL,
@@ -45,32 +42,38 @@ CREATE TABLE `contrato` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `inmueble`
+-- Estructura de tabla para la tabla `inmuebles`
 --
 
-DROP TABLE IF EXISTS `inmueble`;
-CREATE TABLE `inmueble` (
+CREATE TABLE `inmuebles` (
   `Id` int(11) NOT NULL,
   `Direccion` varchar(255) NOT NULL,
-  `Uso` varchar(50) DEFAULT NULL,
+  `Latitud` decimal(50,0) DEFAULT NULL,
   `Tipo` varchar(50) DEFAULT NULL,
-  `CantAmbientes` int(11) DEFAULT NULL,
-  `Coordenadas` varchar(255) DEFAULT NULL,
+  `Ambientes` int(11) DEFAULT NULL,
+  `Superficie` int(255) DEFAULT NULL,
   `Precio` decimal(10,2) DEFAULT NULL,
-  `Estado` varchar(50) DEFAULT NULL,
-  `IdPropietario` int(11) DEFAULT NULL
+  `Habilitado` tinyint(1) DEFAULT NULL,
+  `PropietarioId` int(11) DEFAULT NULL,
+  `Longitud` decimal(10,0) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `inmuebles`
+--
+
+INSERT INTO `inmuebles` (`Id`, `Direccion`, `Latitud`, `Tipo`, `Ambientes`, `Superficie`, `Precio`, `Habilitado`, `PropietarioId`, `Longitud`) VALUES
+(1, 'Sarmiento', 12, 'Casa', 2, 45, 420000.00, 2, 1, 1234);
 
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `inquilino`
+-- Estructura de tabla para la tabla `inquilinos`
 --
 
-DROP TABLE IF EXISTS `inquilino`;
-CREATE TABLE `inquilino` (
+CREATE TABLE `inquilinos` (
   `Id` int(11) NOT NULL,
-  `DNI` varchar(20) NOT NULL,
+  `Dni` varchar(20) NOT NULL,
   `Nombre` varchar(100) NOT NULL,
   `Apellido` varchar(100) NOT NULL,
   `Telefono` varchar(50) DEFAULT NULL,
@@ -78,11 +81,12 @@ CREATE TABLE `inquilino` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Volcado de datos para la tabla `inquilino`
+-- Volcado de datos para la tabla `inquilinos`
 --
 
-INSERT INTO `inquilino` (`Id`, `DNI`, `Nombre`, `Apellido`, `Telefono`, `Email`) VALUES
-(1, '37849526', 'Jeremias', 'Sosa', '2664098415', 'jerelomas@gmail.com');
+INSERT INTO `inquilinos` (`Id`, `Dni`, `Nombre`, `Apellido`, `Telefono`, `Email`) VALUES
+(1, '37849526', 'Jeremias', 'Sosa', '2664098415', 'jerelomas@gmail.com'),
+(2, '24987000', 'Pablo', 'Torrez', '2664333222', 'pablitex@gmail.com');
 
 -- --------------------------------------------------------
 
@@ -90,7 +94,6 @@ INSERT INTO `inquilino` (`Id`, `DNI`, `Nombre`, `Apellido`, `Telefono`, `Email`)
 -- Estructura de tabla para la tabla `pago`
 --
 
-DROP TABLE IF EXISTS `pago`;
 CREATE TABLE `pago` (
   `Id` int(11) NOT NULL,
   `NumeroDePago` int(11) DEFAULT NULL,
@@ -104,27 +107,26 @@ CREATE TABLE `pago` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `propietario`
+-- Estructura de tabla para la tabla `propietarios`
 --
 
-DROP TABLE IF EXISTS `propietario`;
-CREATE TABLE `propietario` (
+CREATE TABLE `propietarios` (
   `Id` int(11) NOT NULL,
-  `DNI` varchar(20) NOT NULL,
+  `Dni` varchar(20) NOT NULL,
   `Apellido` varchar(100) NOT NULL,
   `Nombre` varchar(100) NOT NULL,
-  `Direccion` varchar(255) DEFAULT NULL,
   `Telefono` varchar(50) DEFAULT NULL,
-  `Email` varchar(50) NOT NULL
+  `Email` varchar(50) NOT NULL,
+  `Clave` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Volcado de datos para la tabla `propietario`
+-- Volcado de datos para la tabla `propietarios`
 --
 
-INSERT INTO `propietario` (`Id`, `DNI`, `Apellido`, `Nombre`, `Direccion`, `Telefono`, `Email`) VALUES
-(1, '38752519', 'Escobar', 'Stefani', 'Ciudad de La Punta Mod6 Mz27 C7', '2664009457', 'stefaninairescobar@gmail.com'),
-(3, '34256854', 'Fernandez', 'Emmanuel', 'Aristobulo Del Valle 330', '2664000000', 'emma@gmail.com');
+INSERT INTO `propietarios` (`Id`, `Dni`, `Apellido`, `Nombre`, `Telefono`, `Email`, `Clave`) VALUES
+(1, '38752519', 'Escobar', 'Stefani', '2664009457', 'stefaninairescobar@gmail.com', ''),
+(3, '34256854', 'Fernandez', 'Emmanuel', '2664000000', 'emma@gmail.com', '');
 
 -- --------------------------------------------------------
 
@@ -132,7 +134,6 @@ INSERT INTO `propietario` (`Id`, `DNI`, `Apellido`, `Nombre`, `Direccion`, `Tele
 -- Estructura de tabla para la tabla `usuario`
 --
 
-DROP TABLE IF EXISTS `usuario`;
 CREATE TABLE `usuario` (
   `Id` int(11) NOT NULL,
   `Email` varchar(255) NOT NULL,
@@ -156,18 +157,18 @@ ALTER TABLE `contrato`
   ADD KEY `IdUsuario` (`IdUsuario`);
 
 --
--- Indices de la tabla `inmueble`
+-- Indices de la tabla `inmuebles`
 --
-ALTER TABLE `inmueble`
+ALTER TABLE `inmuebles`
   ADD PRIMARY KEY (`Id`),
-  ADD KEY `IdPropietario` (`IdPropietario`);
+  ADD KEY `IdPropietario` (`PropietarioId`);
 
 --
--- Indices de la tabla `inquilino`
+-- Indices de la tabla `inquilinos`
 --
-ALTER TABLE `inquilino`
+ALTER TABLE `inquilinos`
   ADD PRIMARY KEY (`Id`),
-  ADD UNIQUE KEY `DNI` (`DNI`);
+  ADD UNIQUE KEY `DNI` (`Dni`);
 
 --
 -- Indices de la tabla `pago`
@@ -178,11 +179,11 @@ ALTER TABLE `pago`
   ADD KEY `IdUsuario` (`IdUsuario`);
 
 --
--- Indices de la tabla `propietario`
+-- Indices de la tabla `propietarios`
 --
-ALTER TABLE `propietario`
+ALTER TABLE `propietarios`
   ADD PRIMARY KEY (`Id`),
-  ADD UNIQUE KEY `DNI` (`DNI`);
+  ADD UNIQUE KEY `DNI` (`Dni`);
 
 --
 -- Indices de la tabla `usuario`
@@ -202,16 +203,16 @@ ALTER TABLE `contrato`
   MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `inmueble`
+-- AUTO_INCREMENT de la tabla `inmuebles`
 --
-ALTER TABLE `inmueble`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `inmuebles`
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT de la tabla `inquilino`
+-- AUTO_INCREMENT de la tabla `inquilinos`
 --
-ALTER TABLE `inquilino`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `inquilinos`
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `pago`
@@ -220,10 +221,10 @@ ALTER TABLE `pago`
   MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `propietario`
+-- AUTO_INCREMENT de la tabla `propietarios`
 --
-ALTER TABLE `propietario`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `propietarios`
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`
@@ -239,15 +240,15 @@ ALTER TABLE `usuario`
 -- Filtros para la tabla `contrato`
 --
 ALTER TABLE `contrato`
-  ADD CONSTRAINT `contrato_ibfk_1` FOREIGN KEY (`IdInmueble`) REFERENCES `inmueble` (`Id`),
-  ADD CONSTRAINT `contrato_ibfk_2` FOREIGN KEY (`IdInquilino`) REFERENCES `inquilino` (`Id`),
+  ADD CONSTRAINT `contrato_ibfk_1` FOREIGN KEY (`IdInmueble`) REFERENCES `inmuebles` (`Id`),
+  ADD CONSTRAINT `contrato_ibfk_2` FOREIGN KEY (`IdInquilino`) REFERENCES `inquilinos` (`Id`),
   ADD CONSTRAINT `contrato_ibfk_3` FOREIGN KEY (`IdUsuario`) REFERENCES `usuario` (`Id`);
 
 --
--- Filtros para la tabla `inmueble`
+-- Filtros para la tabla `inmuebles`
 --
-ALTER TABLE `inmueble`
-  ADD CONSTRAINT `inmueble_ibfk_1` FOREIGN KEY (`IdPropietario`) REFERENCES `propietario` (`Id`);
+ALTER TABLE `inmuebles`
+  ADD CONSTRAINT `inmuebles_ibfk_1` FOREIGN KEY (`PropietarioId`) REFERENCES `propietarios` (`Id`);
 
 --
 -- Filtros para la tabla `pago`

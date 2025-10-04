@@ -10,6 +10,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<RepositorioPropietario>();
 builder.Services.AddSingleton<RepositorioInquilino>();
 builder.Services.AddSingleton<RepositorioInmueble>();
+builder.Services.AddTransient<RepositorioContrato>();
+
 
 var app = builder.Build();
 

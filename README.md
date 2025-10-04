@@ -24,15 +24,12 @@ Creación de la carpeta .gitignore :
 Creacion de la carpeta Data donde se encuentra la BD y el DER
 Creacion de MVC y ABM de Propietario.
 Creacion de MVC y ABM de Inquilino.
+Creacion de MVC y ABM de Inmuebles.
+Creacion de MVC y ABM de Contratos.
 
 Configuración de la Base de Datos: Se creó una base de datos llamada inmobiliaria en phpMyAdmin (MySQL). 
 
-Comandos ejecutados para su correco funcionamiento:
-using System.ComponentModel.DataAnnotations;
-dotnet add package Microsoft.EntityFrameworkCore
-dotnet add package Microsoft.EntityFrameworkCore.Tools
-dotnet add package Pomelo.EntityFrameworkCore.MySql
-using Microsoft.EntityFrameworkCore;
+
 
 
 

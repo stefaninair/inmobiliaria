@@ -12,11 +12,10 @@ namespace Inmobiliaria.Models
 
         public RepositorioPropietario(IConfiguration configuration)
         {
-            // El problema está aquí. El método GetConnectionString podría devolver null
-            // si la clave "DefaultConnection" no existe.
+            
             var connStr = configuration.GetConnectionString("DefaultConnection");
             
-            // Verificamos si la cadena de conexión es nula y lanzamos una excepción si es el caso.
+            
             if (string.IsNullOrEmpty(connStr))
             {
                 throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no se encuentra configurada en appsettings.json.");
@@ -24,7 +23,7 @@ namespace Inmobiliaria.Models
             this.connectionString = connStr;
         }
 
-        // El resto del código es el mismo...
+        
          public List<Propietario> ObtenerTodos()
         {
             var res = new List<Propietario>();

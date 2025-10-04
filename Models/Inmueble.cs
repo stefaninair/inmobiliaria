@@ -27,7 +27,7 @@ namespace Inmobiliaria.Models
 		[ForeignKey(nameof(PropietarioId))]
 		public Propietario? Duenio { get; set; }
 		public string? Portada { get; set; }
-		[NotMapped]//Para EF
+		[NotMapped]
 		public IFormFile? PortadaFile { get; set; }
 		[NotMapped]
 		public bool Habilitado { get; set; } = true;

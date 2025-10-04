@@ -1,0 +1,53 @@
+@model IEnumerable<Inmobiliaria.Models.Contrato>
+
+@{
+    ViewData["Title"] = "Listado de Contratos";
+}
+
+<h1>Listado de Contratos</h1>
+
+<p>
+    <a class="btn btn-success" asp-action="Create">Nuevo Contrato</a>
+</p>
+
+<table class="table table-bordered table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.First().Id)</th>
+            <th>Inmueble</th>
+            <th>Inquilino</th>
+            <th>@Html.DisplayNameFor(model => model.First().FechaInicio)</th>
+            <th>@Html.DisplayNameFor(model => model.First().FechaFin)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Monto)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Vigente)</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var contrato in Model)
+        {
+            <tr>
+                <td>@contrato.Id</td>
+                <td>@contrato.Inmueble?.Direccion</td>
+                <td>@contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido</td>
+                <td>@contrato.FechaInicio.ToShortDateString()</td>
+                <td>@contrato.FechaFin.ToShortDateString()</td>
+                <td>$@contrato.Monto</td>
+                <td>@(contrato.Vigente ? "Sí" : "No")</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a class="btn btn-secondary" asp-action="Details" asp-route-id="@contrato.Id" title="Ver">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@contrato.Id" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a class="btn btn-danger" asp-action="Delete" asp-route-id="@contrato.Id" title="Eliminar">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

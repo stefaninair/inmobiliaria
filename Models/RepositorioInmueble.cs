@@ -171,6 +171,33 @@ namespace Inmobiliaria.Models
             }
             return filas;
         }
+        public List<Inmueble> ObtenerPorPropietario(int propietarioId)
+        {
+            var res = new List<Inmueble>();
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                var sql = "SELECT * FROM Inmuebles WHERE PropietarioId = @propietarioId";
+                using (var command = new MySqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@propietarioId", propietarioId);
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            res.Add(new Inmueble
+                            {
+                                Id = reader.GetInt32("Id"),
+                                Direccion = reader.GetString("Direccion"),
+                                
+                            });
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+
 
 
     }

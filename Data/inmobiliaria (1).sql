@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-09-2025 a las 10:13:34
+-- Tiempo de generación: 04-10-2025 a las 10:18:57
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -24,20 +24,25 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `contrato`
+-- Estructura de tabla para la tabla `contratos`
 --
 
-CREATE TABLE `contrato` (
+CREATE TABLE `contratos` (
   `Id` int(11) NOT NULL,
-  `MontoMensual` decimal(10,2) NOT NULL,
+  `Monto` decimal(10,2) NOT NULL,
   `FechaInicio` date NOT NULL,
   `FechaFin` date NOT NULL,
-  `FechaFinCastigo` date DEFAULT NULL,
-  `Estado` varchar(50) DEFAULT NULL,
-  `IdInmueble` int(11) NOT NULL,
-  `IdInquilino` int(11) NOT NULL,
-  `IdUsuario` int(11) NOT NULL
+  `Vigente` varchar(50) DEFAULT NULL,
+  `InmuebleId` int(11) NOT NULL,
+  `InquilinoId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `contratos`
+--
+
+INSERT INTO `contratos` (`Id`, `Monto`, `FechaInicio`, `FechaFin`, `Vigente`, `InmuebleId`, `InquilinoId`) VALUES
+(3, 420000.00, '2025-10-04', '2028-10-04', '1', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -63,7 +68,8 @@ CREATE TABLE `inmuebles` (
 --
 
 INSERT INTO `inmuebles` (`Id`, `Direccion`, `Latitud`, `Tipo`, `Ambientes`, `Superficie`, `Precio`, `Habilitado`, `PropietarioId`, `Longitud`) VALUES
-(1, 'Sarmiento', 12, 'Casa', 2, 45, 420000.00, 2, 1, 1234);
+(1, 'Sarmiento', 12, 'Casa', 2, 45, 420000.00, 2, 1, 1234),
+(5, 'La Punta', 32, NULL, 2, 30, NULL, 1, 1, 12);
 
 -- --------------------------------------------------------
 
@@ -148,13 +154,12 @@ CREATE TABLE `usuario` (
 --
 
 --
--- Indices de la tabla `contrato`
+-- Indices de la tabla `contratos`
 --
-ALTER TABLE `contrato`
+ALTER TABLE `contratos`
   ADD PRIMARY KEY (`Id`),
-  ADD KEY `IdInmueble` (`IdInmueble`),
-  ADD KEY `IdInquilino` (`IdInquilino`),
-  ADD KEY `IdUsuario` (`IdUsuario`);
+  ADD KEY `IdInmueble` (`InmuebleId`),
+  ADD KEY `IdInquilino` (`InquilinoId`);
 
 --
 -- Indices de la tabla `inmuebles`
@@ -197,16 +202,16 @@ ALTER TABLE `usuario`
 --
 
 --
--- AUTO_INCREMENT de la tabla `contrato`
+-- AUTO_INCREMENT de la tabla `contratos`
 --
-ALTER TABLE `contrato`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `contratos`
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `inmuebles`
 --
 ALTER TABLE `inmuebles`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `inquilinos`
@@ -237,12 +242,11 @@ ALTER TABLE `usuario`
 --
 
 --
--- Filtros para la tabla `contrato`
+-- Filtros para la tabla `contratos`
 --
-ALTER TABLE `contrato`
-  ADD CONSTRAINT `contrato_ibfk_1` FOREIGN KEY (`IdInmueble`) REFERENCES `inmuebles` (`Id`),
-  ADD CONSTRAINT `contrato_ibfk_2` FOREIGN KEY (`IdInquilino`) REFERENCES `inquilinos` (`Id`),
-  ADD CONSTRAINT `contrato_ibfk_3` FOREIGN KEY (`IdUsuario`) REFERENCES `usuario` (`Id`);
+ALTER TABLE `contratos`
+  ADD CONSTRAINT `contratos_ibfk_1` FOREIGN KEY (`InmuebleId`) REFERENCES `inmuebles` (`Id`),
+  ADD CONSTRAINT `contratos_ibfk_2` FOREIGN KEY (`InquilinoId`) REFERENCES `inquilinos` (`Id`);
 
 --
 -- Filtros para la tabla `inmuebles`
@@ -254,7 +258,7 @@ ALTER TABLE `inmuebles`
 -- Filtros para la tabla `pago`
 --
 ALTER TABLE `pago`
-  ADD CONSTRAINT `pago_ibfk_1` FOREIGN KEY (`IdContrato`) REFERENCES `contrato` (`Id`),
+  ADD CONSTRAINT `pago_ibfk_1` FOREIGN KEY (`IdContrato`) REFERENCES `contratos` (`Id`),
   ADD CONSTRAINT `pago_ibfk_2` FOREIGN KEY (`IdUsuario`) REFERENCES `usuario` (`Id`);
 COMMIT;
 

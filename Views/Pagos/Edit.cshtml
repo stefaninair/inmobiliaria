@@ -1,0 +1,69 @@
+@model Inmobiliaria.Models.Pago
+
+@{
+    ViewData["Title"] = "Editar Pago";
+    var contratos = (IList<Inmobiliaria.Models.Contrato>)ViewBag.Contratos;
+}
+
+<h1>Editar Pago</h1>
+
+<h4>Pago</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group">
+                <label asp-for="ContratoId" class="control-label">Contrato</label>
+                <select asp-for="ContratoId" class="form-control" required>
+                    @foreach (var contrato in contratos)
+                    {
+                        <option value="@contrato.Id" selected="@(contrato.Id == Model.ContratoId)">
+                            @contrato.Inmueble?.Direccion - @contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido
+                            <text> (Contrato #@contrato.Id)</text>
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="ContratoId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Monto" class="control-label"></label>
+                <input asp-for="Monto" class="form-control" step="0.01" required />
+                <span asp-validation-for="Monto" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="FechaPago" class="control-label"></label>
+                <input asp-for="FechaPago" type="date" class="form-control" required />
+                <span asp-validation-for="FechaPago" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Periodo" class="control-label"></label>
+                <input asp-for="Periodo" class="form-control" placeholder="YYYY-MM" required />
+                <small class="form-text text-muted">Formato: YYYY-MM (ej: 2024-01)</small>
+                <span asp-validation-for="Periodo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Observaciones" class="control-label"></label>
+                <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Observaciones" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Guardar" class="btn btn-primary" />
+                <a class="btn btn-secondary" asp-action="Index">Volver al listado</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

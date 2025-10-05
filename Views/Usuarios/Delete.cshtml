@@ -1,0 +1,58 @@
+@model Inmobiliaria.Models.Usuario
+
+@{
+    ViewData["Title"] = "Eliminar Usuario";
+}
+
+<h1>Eliminar Usuario</h1>
+
+<h3>¿Estás seguro que quieres eliminar este usuario?</h3>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <dl class="row">
+            <dt class="col-sm-4">
+                @Html.DisplayNameFor(model => model.Id)
+            </dt>
+            <dd class="col-sm-8">
+                @Html.DisplayFor(model => model.Id)
+            </dd>
+
+            <dt class="col-sm-4">
+                @Html.DisplayNameFor(model => model.Nombre)
+            </dt>
+            <dd class="col-sm-8">
+                @Html.DisplayFor(model => model.Nombre)
+            </dd>
+
+            <dt class="col-sm-4">
+                @Html.DisplayNameFor(model => model.Email)
+            </dt>
+            <dd class="col-sm-8">
+                @Html.DisplayFor(model => model.Email)
+            </dd>
+
+            <dt class="col-sm-4">
+                @Html.DisplayNameFor(model => model.Rol)
+            </dt>
+            <dd class="col-sm-8">
+                @if (Model.Rol == Inmobiliaria.Models.Rol.Administrador)
+                {
+                    <span class="badge badge-danger">Administrador</span>
+                }
+                else
+                {
+                    <span class="badge badge-info">Empleado</span>
+                }
+            </dd>
+        </dl>
+
+        <form asp-action="Delete">
+            <input type="hidden" asp-for="Id" />
+            <input type="submit" value="Eliminar" class="btn btn-danger" />
+            <a class="btn btn-secondary" asp-action="Index">Volver a la lista</a>
+        </form>
+    </div>
+</div>
+

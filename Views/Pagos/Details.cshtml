@@ -1,0 +1,104 @@
+@model Inmobiliaria.Models.Pago
+
+@{
+    ViewData["Title"] = "Detalles del Pago";
+}
+
+<h1>Detalles del Pago</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <table class="table table-bordered">
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Id)</th>
+                <td>@Model.Id</td>
+            </tr>
+            <tr>
+                <th>Contrato</th>
+                <td>
+                    @Model.Contrato?.Inmueble?.Direccion
+                    <br><small class="text-muted">Contrato #@Model.ContratoId</small>
+                </td>
+            </tr>
+            <tr>
+                <th>Inquilino</th>
+                <td>@Model.Contrato?.Inquilino?.Nombre @Model.Contrato?.Inquilino?.Apellido</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Monto)</th>
+                <td>@Model.Monto.ToString("C")</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.FechaPago)</th>
+                <td>@Model.FechaPago.ToShortDateString()</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Periodo)</th>
+                <td>@Model.Periodo</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Observaciones)</th>
+                <td>@(Model.Observaciones ?? "Sin observaciones")</td>
+            </tr>
+            <tr>
+                <th>Estado</th>
+                <td>
+                    @if (Model.Eliminado)
+                    {
+                        <span class="badge badge-danger">Eliminado</span>
+                    }
+                    else if (Model.Anulado)
+                    {
+                        <span class="badge badge-warning">Anulado</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-success">Activo</span>
+                    }
+                </td>
+            </tr>
+            @if (User.IsInRole("Administrador"))
+            {
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.CreadoPorUser)</th>
+                    <td>@Model.CreadoPorUser?.Nombre (@Model.CreadoEn.ToShortDateString())</td>
+                </tr>
+                @if (Model.AnuladoPorUser != null)
+                {
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.AnuladoPorUser)</th>
+                        <td>
+                            @Model.AnuladoPorUser.Nombre (@Model.AnuladoEn?.ToShortDateString())
+                            <br><small class="text-muted">Motivo: @Model.MotivoAnulacion</small>
+                        </td>
+                    </tr>
+                }
+                @if (Model.EliminadoPorUser != null)
+                {
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.EliminadoPorUser)</th>
+                        <td>@Model.EliminadoPorUser.Nombre (@Model.EliminadoEn?.ToShortDateString())</td>
+                    </tr>
+                }
+            }
+        </table>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a class="btn btn-secondary" asp-action="Index">Volver al listado</a>
+    @if (!Model.Eliminado && !Model.Anulado)
+    {
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id">Editar</a>
+        <a class="btn btn-warning" asp-action="Anular" asp-route-id="@Model.Id">Anular</a>
+        @if (User.IsInRole("Administrador"))
+        {
+            <a class="btn btn-danger" asp-action="Delete" asp-route-id="@Model.Id">Eliminar</a>
+        }
+    }
+    @if (Model.Eliminado && User.IsInRole("Administrador"))
+    {
+        <a class="btn btn-success" asp-action="Restaurar" asp-route-id="@Model.Id">Restaurar</a>
+    }
+</div>

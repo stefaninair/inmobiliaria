@@ -6,9 +6,29 @@
 
 <h1>Listado de Contratos</h1>
 
-<p>
-    <a class="btn btn-success" asp-action="Create">Nuevo Contrato</a>
-</p>
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-plus"></i> Nuevo Contrato
+        </a>
+    </div>
+    <div class="col-md-6 text-right">
+        <div class="btn-group" role="group">
+            <a class="btn btn-info" asp-action="Vigentes">
+                <i class="fa-solid fa-check-circle"></i> Vigentes
+            </a>
+            <a class="btn btn-warning" asp-action="Vencidos">
+                <i class="fa-solid fa-times-circle"></i> Vencidos
+            </a>
+            <a class="btn btn-primary" asp-action="PorInmueble">
+                <i class="fa-solid fa-building"></i> Por Inmueble
+            </a>
+            <a class="btn btn-secondary" asp-action="Estadisticas">
+                <i class="fa-solid fa-chart-bar"></i> Estadísticas
+            </a>
+        </div>
+    </div>
+</div>
 
 <table class="table table-bordered table-striped">
     <thead class="thead-dark">
@@ -18,8 +38,8 @@
             <th>Inquilino</th>
             <th>@Html.DisplayNameFor(model => model.First().FechaInicio)</th>
             <th>@Html.DisplayNameFor(model => model.First().FechaFin)</th>
-            <th>@Html.DisplayNameFor(model => model.First().Monto)</th>
-            <th>@Html.DisplayNameFor(model => model.First().Vigente)</th>
+            <th>@Html.DisplayNameFor(model => model.First().MontoMensual)</th>
+            <th>Estado</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -32,8 +52,21 @@
                 <td>@contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido</td>
                 <td>@contrato.FechaInicio.ToShortDateString()</td>
                 <td>@contrato.FechaFin.ToShortDateString()</td>
-                <td>$@contrato.Monto</td>
-                <td>@(contrato.Vigente ? "Sí" : "No")</td>
+                <td>$@contrato.MontoMensual</td>
+                <td>
+                    @if (contrato.FechaTerminacionAnticipada != null)
+                    {
+                        <span class="badge badge-warning">Terminado Anticipadamente</span>
+                    }
+                    else if (contrato.Vigente)
+                    {
+                        <span class="badge badge-success">Vigente</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-danger">Vencido</span>
+                    }
+                </td>
                 <td>
                     <div class="btn-group" role="group">
                         <a class="btn btn-secondary" asp-action="Details" asp-route-id="@contrato.Id" title="Ver">
@@ -42,9 +75,21 @@
                         <a class="btn btn-primary" asp-action="Edit" asp-route-id="@contrato.Id" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </a>
-                        <a class="btn btn-danger" asp-action="Delete" asp-route-id="@contrato.Id" title="Eliminar">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </a>
+                        @if (!contrato.FechaTerminacionAnticipada.HasValue)
+                        {
+                            <a class="btn btn-success" asp-action="Renovar" asp-route-id="@contrato.Id" title="Renovar">
+                                <i class="fa-solid fa-calendar-plus"></i>
+                            </a>
+                            <a class="btn btn-warning" asp-action="Terminar" asp-route-id="@contrato.Id" title="Terminar">
+                                <i class="fa-solid fa-calendar-times"></i>
+                            </a>
+                        }
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <a class="btn btn-danger" asp-action="Delete" asp-route-id="@contrato.Id" title="Eliminar">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        }
                     </div>
                 </td>
             </tr>

@@ -1,0 +1,69 @@
+@{
+    ViewData["Title"] = "Seleccionar Propietario";
+    var propietarios = (IList<Inmobiliaria.Models.Propietario>)ViewBag.Propietarios;
+}
+
+<h1>Reporte de Inmuebles por Propietario</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Seleccionar Propietario</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="PorPropietario" method="get">
+                    <div class="form-group">
+                        <label for="propietarioId" class="form-label">Propietario:</label>
+                        <select name="propietarioId" id="propietarioId" class="form-control" required>
+                            <option value="">-- Seleccionar Propietario --</option>
+                            @foreach (var propietario in propietarios)
+                            {
+                                <option value="@propietario.Id">
+                                    @propietario.Nombre @propietario.Apellido
+                                    <text> (@propietario.Email)</text>
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-search"></i> Generar Reporte
+                        </button>
+                        <a class="btn btn-secondary" asp-action="Index">
+                            <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Otras Opciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a class="list-group-item list-group-item-action" asp-action="Libres">
+                        <i class="fa-solid fa-home text-success"></i>
+                        Inmuebles Libres
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="Ocupados">
+                        <i class="fa-solid fa-users text-warning"></i>
+                        Inmuebles Ocupados
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="Disponibles">
+                        <i class="fa-solid fa-check-circle text-info"></i>
+                        Inmuebles Disponibles
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="Estadisticas">
+                        <i class="fa-solid fa-chart-bar text-secondary"></i>
+                        Estadísticas Generales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

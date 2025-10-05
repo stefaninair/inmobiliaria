@@ -51,14 +51,21 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="Monto" class="control-label"></label>
-                <input asp-for="Monto" class="form-control" />
-                <span asp-validation-for="Monto" class="text-danger"></span>
+                <label asp-for="MontoMensual" class="control-label"></label>
+                <input asp-for="MontoMensual" class="form-control" step="0.01" />
+                <span asp-validation-for="MontoMensual" class="text-danger"></span>
             </div>
 
-            <div class="form-group form-check">
-                <input asp-for="Vigente" class="form-check-input" />
-                <label asp-for="Vigente" class="form-check-label">Contrato vigente</label>
+            <div class="form-group">
+                <label asp-for="FechaTerminacionAnticipada" class="control-label"></label>
+                <input asp-for="FechaTerminacionAnticipada" type="date" class="form-control" />
+                <span asp-validation-for="FechaTerminacionAnticipada" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Multa" class="control-label"></label>
+                <input asp-for="Multa" class="form-control" step="0.01" />
+                <span asp-validation-for="Multa" class="text-danger"></span>
             </div>
 
             <div class="form-group">

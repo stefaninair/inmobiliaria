@@ -69,9 +69,12 @@
                         <a class="btn btn-primary" asp-action="Edit" asp-route-id="@item.Id" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </a>
-                        <a class="btn btn-danger" asp-action="Delete" asp-route-id="@item.Id" title="Eliminar">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </a>
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <a class="btn btn-danger" asp-action="Delete" asp-route-id="@item.Id" title="Eliminar">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        }
                         <a class="btn btn-secondary" asp-action="Details" asp-route-id="@item.Id" title="Ver">
                             <i class="fa-solid fa-eye"></i>
                         </a>

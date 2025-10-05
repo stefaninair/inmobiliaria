@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Inmobiliaria.Data;
 using Inmobiliaria.Models;
 
 namespace Inmobiliaria.Controllers
 {
+    [Authorize]
     public class TiposInmuebleController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -110,6 +112,7 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: TiposInmueble/Delete/5
+        [Authorize(Policy = "SoloAdmin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -130,6 +133,7 @@ namespace Inmobiliaria.Controllers
         // POST: TiposInmueble/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SoloAdmin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var tipoInmueble = await _context.TiposInmueble.FindAsync(id);

@@ -24,8 +24,14 @@
             <dt class="col-sm-4">@Html.DisplayNameFor(model => model.FechaFin)</dt>
             <dd class="col-sm-8">@Model.FechaFin.ToShortDateString()</dd>
 
-            <dt class="col-sm-4">@Html.DisplayNameFor(model => model.Monto)</dt>
-            <dd class="col-sm-8">$@Model.Monto</dd>
+            <dt class="col-sm-4">@Html.DisplayNameFor(model => model.MontoMensual)</dt>
+            <dd class="col-sm-8">$@Model.MontoMensual</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(model => model.FechaTerminacionAnticipada)</dt>
+            <dd class="col-sm-8">@(Model.FechaTerminacionAnticipada?.ToShortDateString() ?? "No aplica")</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(model => model.Multa)</dt>
+            <dd class="col-sm-8">@(Model.Multa?.ToString("C") ?? "No aplica")</dd>
 
             <dt class="col-sm-4">@Html.DisplayNameFor(model => model.Vigente)</dt>
             <dd class="col-sm-8">@(Model.Vigente ? "Sí" : "No")</dd>

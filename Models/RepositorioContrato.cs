@@ -19,7 +19,8 @@ namespace Inmobiliaria.Models
             var res = new List<Contrato>();
             using (var connection = new MySqlConnection(connectionString))
             {
-                var sql = @"SELECT c.Id, c.InmuebleId, c.InquilinoId, c.FechaInicio, c.FechaFin, c.Monto, c.Vigente,
+                var sql = @"SELECT c.Id, c.InmuebleId, c.InquilinoId, c.FechaInicio, c.FechaFin, c.MontoMensual, 
+                            c.FechaTerminacionAnticipada, c.Multa, c.CreadoPorUserId, c.CreadoEn, c.TerminadoPorUserId, c.TerminadoEn,
                             i.Direccion, iq.Nombre, iq.Apellido
                             FROM contratos c
                             JOIN inmuebles i ON c.InmuebleId = i.Id
@@ -38,8 +39,13 @@ namespace Inmobiliaria.Models
                                 InquilinoId = reader.GetInt32("InquilinoId"),
                                 FechaInicio = reader.GetDateTime("FechaInicio"),
                                 FechaFin = reader.GetDateTime("FechaFin"),
-                                Monto = reader.GetDecimal("Monto"),
-                                Vigente = reader.GetBoolean("Vigente"),
+                                MontoMensual = reader.GetDecimal("MontoMensual"),
+                                FechaTerminacionAnticipada = reader.IsDBNull(reader.GetOrdinal("FechaTerminacionAnticipada")) ? null : reader.GetDateTime("FechaTerminacionAnticipada"),
+                                Multa = reader.IsDBNull(reader.GetOrdinal("Multa")) ? null : reader.GetDecimal("Multa"),
+                                CreadoPorUserId = reader.GetInt32("CreadoPorUserId"),
+                                CreadoEn = reader.GetDateTime("CreadoEn"),
+                                TerminadoPorUserId = reader.IsDBNull(reader.GetOrdinal("TerminadoPorUserId")) ? null : reader.GetInt32("TerminadoPorUserId"),
+                                TerminadoEn = reader.IsDBNull(reader.GetOrdinal("TerminadoEn")) ? null : reader.GetDateTime("TerminadoEn"),
                                 Inmueble = new Inmueble
                                 {
                                     Id = reader.GetInt32("InmuebleId"),
@@ -64,7 +70,8 @@ namespace Inmobiliaria.Models
             Contrato? contrato = null;
             using (var connection = new MySqlConnection(connectionString))
             {
-                var sql = @"SELECT c.Id, c.InmuebleId, c.InquilinoId, c.FechaInicio, c.FechaFin, c.Monto, c.Vigente,
+                var sql = @"SELECT c.Id, c.InmuebleId, c.InquilinoId, c.FechaInicio, c.FechaFin, c.MontoMensual, 
+                            c.FechaTerminacionAnticipada, c.Multa, c.CreadoPorUserId, c.CreadoEn, c.TerminadoPorUserId, c.TerminadoEn,
                             i.Direccion, iq.Nombre, iq.Apellido
                             FROM contratos c
                             JOIN inmuebles i ON c.InmuebleId = i.Id
@@ -85,8 +92,13 @@ namespace Inmobiliaria.Models
                                 InquilinoId = reader.GetInt32("InquilinoId"),
                                 FechaInicio = reader.GetDateTime("FechaInicio"),
                                 FechaFin = reader.GetDateTime("FechaFin"),
-                                Monto = reader.GetDecimal("Monto"),
-                                Vigente = reader.GetBoolean("Vigente"),
+                                MontoMensual = reader.GetDecimal("MontoMensual"),
+                                FechaTerminacionAnticipada = reader.IsDBNull(reader.GetOrdinal("FechaTerminacionAnticipada")) ? null : reader.GetDateTime("FechaTerminacionAnticipada"),
+                                Multa = reader.IsDBNull(reader.GetOrdinal("Multa")) ? null : reader.GetDecimal("Multa"),
+                                CreadoPorUserId = reader.GetInt32("CreadoPorUserId"),
+                                CreadoEn = reader.GetDateTime("CreadoEn"),
+                                TerminadoPorUserId = reader.IsDBNull(reader.GetOrdinal("TerminadoPorUserId")) ? null : reader.GetInt32("TerminadoPorUserId"),
+                                TerminadoEn = reader.IsDBNull(reader.GetOrdinal("TerminadoEn")) ? null : reader.GetDateTime("TerminadoEn"),
                                 Inmueble = new Inmueble
                                 {
                                     Id = reader.GetInt32("InmuebleId"),
@@ -111,8 +123,10 @@ namespace Inmobiliaria.Models
             int id = 0;
             using (var connection = new MySqlConnection(connectionString))
             {
-                var sql = @"INSERT INTO contratos (InmuebleId, InquilinoId, FechaInicio, FechaFin, Monto, Vigente)
-                            VALUES (@inmuebleId, @inquilinoId, @fechaInicio, @fechaFin, @monto, @vigente);
+                var sql = @"INSERT INTO contratos (InmuebleId, InquilinoId, FechaInicio, FechaFin, MontoMensual, 
+                            FechaTerminacionAnticipada, Multa, CreadoPorUserId, CreadoEn, TerminadoPorUserId, TerminadoEn)
+                            VALUES (@inmuebleId, @inquilinoId, @fechaInicio, @fechaFin, @montoMensual, 
+                            @fechaTerminacionAnticipada, @multa, @creadoPorUserId, @creadoEn, @terminadoPorUserId, @terminadoEn);
                             SELECT LAST_INSERT_ID();";
                 using (var command = new MySqlCommand(sql, connection))
                 {
@@ -120,8 +134,13 @@ namespace Inmobiliaria.Models
                     command.Parameters.AddWithValue("@inquilinoId", c.InquilinoId);
                     command.Parameters.AddWithValue("@fechaInicio", c.FechaInicio);
                     command.Parameters.AddWithValue("@fechaFin", c.FechaFin);
-                    command.Parameters.AddWithValue("@monto", c.Monto);
-                    command.Parameters.AddWithValue("@vigente", c.Vigente);
+                    command.Parameters.AddWithValue("@montoMensual", c.MontoMensual);
+                    command.Parameters.AddWithValue("@fechaTerminacionAnticipada", c.FechaTerminacionAnticipada ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@multa", c.Multa ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@creadoPorUserId", c.CreadoPorUserId);
+                    command.Parameters.AddWithValue("@creadoEn", c.CreadoEn);
+                    command.Parameters.AddWithValue("@terminadoPorUserId", c.TerminadoPorUserId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@terminadoEn", c.TerminadoEn ?? (object)DBNull.Value);
                     connection.Open();
                     id = Convert.ToInt32(command.ExecuteScalar());
                     c.Id = id;
@@ -136,7 +155,9 @@ namespace Inmobiliaria.Models
             using (var connection = new MySqlConnection(connectionString))
             {
                 var sql = @"UPDATE contratos SET InmuebleId=@inmuebleId, InquilinoId=@inquilinoId,
-                            FechaInicio=@fechaInicio, FechaFin=@fechaFin, Monto=@monto, Vigente=@vigente
+                            FechaInicio=@fechaInicio, FechaFin=@fechaFin, MontoMensual=@montoMensual, 
+                            FechaTerminacionAnticipada=@fechaTerminacionAnticipada, Multa=@multa,
+                            TerminadoPorUserId=@terminadoPorUserId, TerminadoEn=@terminadoEn
                             WHERE Id=@id";
                 using (var command = new MySqlCommand(sql, connection))
                 {
@@ -144,8 +165,11 @@ namespace Inmobiliaria.Models
                     command.Parameters.AddWithValue("@inquilinoId", c.InquilinoId);
                     command.Parameters.AddWithValue("@fechaInicio", c.FechaInicio);
                     command.Parameters.AddWithValue("@fechaFin", c.FechaFin);
-                    command.Parameters.AddWithValue("@monto", c.Monto);
-                    command.Parameters.AddWithValue("@vigente", c.Vigente);
+                    command.Parameters.AddWithValue("@montoMensual", c.MontoMensual);
+                    command.Parameters.AddWithValue("@fechaTerminacionAnticipada", c.FechaTerminacionAnticipada ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@multa", c.Multa ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@terminadoPorUserId", c.TerminadoPorUserId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@terminadoEn", c.TerminadoEn ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@id", c.Id);
                     connection.Open();
                     filas = command.ExecuteNonQuery();

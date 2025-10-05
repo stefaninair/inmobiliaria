@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Inmobiliaria.Models;
 using System;
 using System.Linq;
 
 namespace Inmobiliaria.Controllers
 {
+    [Authorize]
     public class PropietariosController : Controller
     {
         private readonly RepositorioPropietario repositorio;
@@ -70,6 +72,7 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Propietarios/Delete/5
+        [Authorize(Policy = "SoloAdmin")]
         public IActionResult Delete(int id)
         {
             var p = repositorio.ObtenerPorId(id);
@@ -83,9 +86,11 @@ namespace Inmobiliaria.Controllers
         // POST: Propietarios/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SoloAdmin")]
         public IActionResult DeleteConfirmed(int id)
         {
             repositorio.Baja(id);
+            TempData["Success"] = "Propietario eliminado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
     }

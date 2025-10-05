@@ -1,0 +1,142 @@
+@model dynamic
+
+@{
+    ViewData["Title"] = "Estadísticas de Contratos";
+}
+
+<h1>Estadísticas de Contratos</h1>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fa-solid fa-file-contract"></i>
+                </h5>
+                <h3 class="text-primary">@Model.TotalContratos</h3>
+                <p class="card-text">Total de Contratos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">
+                    <i class="fa-solid fa-check-circle"></i>
+                </h5>
+                <h3 class="text-success">@Model.ContratosVigentes</h3>
+                <p class="card-text">Contratos Vigentes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-danger">
+                    <i class="fa-solid fa-times-circle"></i>
+                </h5>
+                <h3 class="text-danger">@Model.ContratosVencidos</h3>
+                <p class="card-text">Contratos Vencidos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                </h5>
+                <h3 class="text-warning">@Model.ContratosTerminadosAnticipadamente</h3>
+                <p class="card-text">Terminados Anticipadamente</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Ingresos Mensuales</h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-success">@Model.IngresosMensuales.ToString("C")</h2>
+                <p class="text-muted">Total de ingresos por contratos vigentes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Acciones Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a class="list-group-item list-group-item-action" asp-action="Vigentes">
+                        <i class="fa-solid fa-check-circle text-success"></i>
+                        Ver Contratos Vigentes
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="Vencidos">
+                        <i class="fa-solid fa-times-circle text-danger"></i>
+                        Ver Contratos Vencidos
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="PorInmueble">
+                        <i class="fa-solid fa-building text-info"></i>
+                        Reporte por Inmueble
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-action="Index">
+                        <i class="fa-solid fa-list text-secondary"></i>
+                        Ver Todos los Contratos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Resumen de Estados</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Distribución de Contratos</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" style="width: @(Model.TotalContratos > 0 ? (Model.ContratosVigentes * 100.0 / Model.TotalContratos) : 0)%">
+                                Vigentes: @Model.ContratosVigentes
+                            </div>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-danger" style="width: @(Model.TotalContratos > 0 ? (Model.ContratosVencidos * 100.0 / Model.TotalContratos) : 0)%">
+                                Vencidos: @Model.ContratosVencidos
+                            </div>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-warning" style="width: @(Model.TotalContratos > 0 ? (Model.ContratosTerminadosAnticipadamente * 100.0 / Model.TotalContratos) : 0)%">
+                                Terminados: @Model.ContratosTerminadosAnticipadamente
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6>Información Adicional</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fa-solid fa-calendar text-primary"></i> <strong>Fecha actual:</strong> @DateTime.Now.ToLongDateString()</li>
+                            <li><i class="fa-solid fa-dollar-sign text-success"></i> <strong>Ingresos mensuales:</strong> @Model.IngresosMensuales.ToString("C")</li>
+                            <li><i class="fa-solid fa-percentage text-info"></i> <strong>Porcentaje de contratos vigentes:</strong> @(Model.TotalContratos > 0 ? Math.Round(Model.ContratosVigentes * 100.0 / Model.TotalContratos, 1) : 0)%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a class="btn btn-secondary" asp-action="Index">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+    </a>
+</div>
+

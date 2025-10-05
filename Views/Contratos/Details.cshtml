@@ -31,13 +31,35 @@
                 <td>@Model.FechaFin.ToShortDateString()</td>
             </tr>
             <tr>
-                <th>@Html.DisplayNameFor(model => model.Monto)</th>
-                <td>$@Model.Monto</td>
+                <th>@Html.DisplayNameFor(model => model.MontoMensual)</th>
+                <td>$@Model.MontoMensual</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.FechaTerminacionAnticipada)</th>
+                <td>@(Model.FechaTerminacionAnticipada?.ToShortDateString() ?? "No aplica")</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Multa)</th>
+                <td>@(Model.Multa?.ToString("C") ?? "No aplica")</td>
             </tr>
             <tr>
                 <th>@Html.DisplayNameFor(model => model.Vigente)</th>
                 <td>@(Model.Vigente ? "Sí" : "No")</td>
             </tr>
+            @if (User.IsInRole("Administrador"))
+            {
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.CreadoPorUser)</th>
+                    <td>@Model.CreadoPorUser?.Nombre (@Model.CreadoEn.ToShortDateString())</td>
+                </tr>
+                @if (Model.TerminadoPorUser != null)
+                {
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.TerminadoPorUser)</th>
+                        <td>@Model.TerminadoPorUser.Nombre (@Model.TerminadoEn?.ToShortDateString())</td>
+                    </tr>
+                }
+            }
         </table>
 
         <a class="btn btn-secondary" asp-action="Index">Volver al listado</a>

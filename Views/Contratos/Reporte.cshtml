@@ -1,0 +1,109 @@
+@model IEnumerable<Inmobiliaria.Models.Contrato>
+
+@{
+    ViewData["Title"] = ViewBag.Titulo;
+}
+
+<h1>@ViewBag.Titulo</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <p class="text-muted">Total de registros: <strong>@ViewBag.Total</strong></p>
+    </div>
+    <div class="col-md-6 text-right">
+        <a class="btn btn-secondary" asp-action="Index">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+        </a>
+        <a class="btn btn-info" asp-action="Estadisticas">
+            <i class="fa-solid fa-chart-bar"></i> Estadísticas
+        </a>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Inmueble</th>
+                    <th>Inquilino</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th>Monto Mensual</th>
+                    <th>Estado</th>
+                    <th>Creado por</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contrato in Model)
+                {
+                    <tr>
+                        <td>@contrato.Id</td>
+                        <td>
+                            @contrato.Inmueble?.Direccion
+                            @if (contrato.Inmueble?.Propietario != null)
+                            {
+                                <br><small class="text-muted">Propietario: @contrato.Inmueble.Propietario.Nombre @contrato.Inmueble.Propietario.Apellido</small>
+                            }
+                        </td>
+                        <td>@contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido</td>
+                        <td>@contrato.FechaInicio.ToShortDateString()</td>
+                        <td>@contrato.FechaFin.ToShortDateString()</td>
+                        <td>@contrato.MontoMensual.ToString("C")</td>
+                        <td>
+                            @if (contrato.FechaTerminacionAnticipada != null)
+                            {
+                                <span class="badge badge-warning">Terminado Anticipadamente</span>
+                            }
+                            else if (contrato.Vigente)
+                            {
+                                <span class="badge badge-success">Vigente</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">Vencido</span>
+                            }
+                        </td>
+                        <td>
+                            @contrato.CreadoPorUser?.Nombre
+                            <br><small class="text-muted">@contrato.CreadoEn.ToShortDateString()</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-sm btn-secondary" asp-action="Details" asp-route-id="@contrato.Id" title="Ver">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@contrato.Id" title="Editar">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                @if (User.IsInRole("Administrador"))
+                                {
+                                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@contrato.Id" title="Eliminar">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-info-circle"></i>
+        No se encontraron contratos para los criterios seleccionados.
+    </div>
+}
+
+<div class="mt-3">
+    <a class="btn btn-secondary" asp-action="Index">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+    </a>
+</div>
+

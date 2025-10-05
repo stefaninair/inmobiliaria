@@ -1,0 +1,117 @@
+@model IEnumerable<Inmobiliaria.Models.Pago>
+
+@{
+    ViewData["Title"] = ViewBag.Titulo ?? "Listado de Pagos";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-plus"></i> Nuevo Pago
+        </a>
+        @if (User.IsInRole("Administrador"))
+        {
+            <a class="btn btn-warning" asp-action="Eliminados">
+                <i class="fa-solid fa-trash-restore"></i> Ver Eliminados
+            </a>
+        }
+    </div>
+    <div class="col-md-6 text-right">
+        <a class="btn btn-info" asp-controller="Contratos" asp-action="Index">
+            <i class="fa-solid fa-file-contract"></i> Ver Contratos
+        </a>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Contrato</th>
+                    <th>Inquilino</th>
+                    <th>Monto</th>
+                    <th>Fecha Pago</th>
+                    <th>Período</th>
+                    <th>Estado</th>
+                    <th>Creado por</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var pago in Model)
+                {
+                    <tr>
+                        <td>@pago.Id</td>
+                        <td>
+                            @pago.Contrato?.Inmueble?.Direccion
+                            <br><small class="text-muted">Contrato #@pago.ContratoId</small>
+                        </td>
+                        <td>@pago.Contrato?.Inquilino?.Nombre @pago.Contrato?.Inquilino?.Apellido</td>
+                        <td>@pago.Monto.ToString("C")</td>
+                        <td>@pago.FechaPago.ToShortDateString()</td>
+                        <td>@pago.Periodo</td>
+                        <td>
+                            @if (pago.Eliminado)
+                            {
+                                <span class="badge badge-danger">Eliminado</span>
+                            }
+                            else if (pago.Anulado)
+                            {
+                                <span class="badge badge-warning">Anulado</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                        </td>
+                        <td>
+                            @pago.CreadoPorUser?.Nombre
+                            <br><small class="text-muted">@pago.CreadoEn.ToShortDateString()</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-sm btn-secondary" asp-action="Details" asp-route-id="@pago.Id" title="Ver">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                @if (!pago.Eliminado && !pago.Anulado)
+                                {
+                                    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@pago.Id" title="Editar">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-warning" asp-action="Anular" asp-route-id="@pago.Id" title="Anular">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </a>
+                                    @if (User.IsInRole("Administrador"))
+                                    {
+                                        <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@pago.Id" title="Eliminar">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </a>
+                                    }
+                                }
+                                @if (pago.Eliminado && User.IsInRole("Administrador"))
+                                {
+                                    <a class="btn btn-sm btn-success" asp-action="Restaurar" asp-route-id="@pago.Id" title="Restaurar">
+                                        <i class="fa-solid fa-undo"></i>
+                                    </a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-info-circle"></i>
+        No se encontraron pagos.
+    </div>
+}
+

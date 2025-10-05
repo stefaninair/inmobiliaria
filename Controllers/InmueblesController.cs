@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Inmobiliaria.Models;
 using Inmobiliaria.Data;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Inmobiliaria.Controllers
 {
+    [Authorize]
     public class InmueblesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -173,6 +175,7 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Inmuebles/Delete/5
+        [Authorize(Policy = "SoloAdmin")]
         public async Task<IActionResult> Delete(int id)
         {
             var entidad = await _context.Inmuebles
@@ -190,6 +193,7 @@ namespace Inmobiliaria.Controllers
         // POST: Inmuebles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SoloAdmin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             try
@@ -214,5 +218,98 @@ namespace Inmobiliaria.Controllers
                 return View(entidad);
             }
         }
+
+        // GET: Inmuebles/PorPropietario
+        public async Task<IActionResult> PorPropietario(int? propietarioId)
+        {
+            await CargarPropietarios();
+            
+            if (propietarioId.HasValue)
+            {
+                var inmueblesPorPropietario = await _context.Inmuebles
+                    .Include(i => i.Propietario)
+                    .Include(i => i.TipoInmueble)
+                    .Where(i => i.PropietarioId == propietarioId.Value)
+                    .OrderBy(i => i.Direccion)
+                    .ToListAsync();
+
+                ViewBag.Titulo = $"Inmuebles del Propietario: {inmueblesPorPropietario.FirstOrDefault()?.Propietario?.Nombre} {inmueblesPorPropietario.FirstOrDefault()?.Propietario?.Apellido}";
+                ViewBag.Total = inmueblesPorPropietario.Count;
+                ViewBag.PropietarioSeleccionado = propietarioId.Value;
+                return View("ReporteInmuebles", inmueblesPorPropietario);
+            }
+
+            ViewBag.Titulo = "Seleccionar Propietario";
+            return View("SeleccionarPropietario");
+        }
+
+        // GET: Inmuebles/Libres
+        public async Task<IActionResult> Libres()
+        {
+            var inmueblesLibres = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .Where(i => i.Disponible && 
+                           !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
+                                                       c.FechaTerminacionAnticipada == null && 
+                                                       DateTime.Now >= c.FechaInicio && 
+                                                       DateTime.Now <= c.FechaFin))
+                .OrderBy(i => i.Direccion)
+                .ToListAsync();
+
+            ViewBag.Titulo = "Inmuebles Libres";
+            ViewBag.Total = inmueblesLibres.Count;
+            return View("ReporteInmuebles", inmueblesLibres);
+        }
+
+        // GET: Inmuebles/Ocupados
+        public async Task<IActionResult> Ocupados()
+        {
+            var inmueblesOcupados = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .Where(i => _context.Contratos.Any(c => c.InmuebleId == i.Id && 
+                                                       c.FechaTerminacionAnticipada == null && 
+                                                       DateTime.Now >= c.FechaInicio && 
+                                                       DateTime.Now <= c.FechaFin))
+                .OrderBy(i => i.Direccion)
+                .ToListAsync();
+
+            ViewBag.Titulo = "Inmuebles Ocupados";
+            ViewBag.Total = inmueblesOcupados.Count;
+            return View("ReporteInmuebles", inmueblesOcupados);
+        }
+
+        // GET: Inmuebles/Estadisticas
+        public async Task<IActionResult> Estadisticas()
+        {
+            var estadisticas = new
+            {
+                TotalInmuebles = await _context.Inmuebles.CountAsync(),
+                InmueblesDisponibles = await _context.Inmuebles.CountAsync(i => i.Disponible),
+                InmueblesOcupados = await _context.Inmuebles.CountAsync(i => 
+                    _context.Contratos.Any(c => c.InmuebleId == i.Id && 
+                                              c.FechaTerminacionAnticipada == null && 
+                                              DateTime.Now >= c.FechaInicio && 
+                                              DateTime.Now <= c.FechaFin)),
+                InmueblesLibres = await _context.Inmuebles.CountAsync(i => 
+                    i.Disponible && 
+                    !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
+                                               c.FechaTerminacionAnticipada == null && 
+                                               DateTime.Now >= c.FechaInicio && 
+                                               DateTime.Now <= c.FechaFin)),
+                TotalPropietarios = await _context.Propietarios.CountAsync(),
+                IngresosPotenciales = await _context.Inmuebles
+                    .Where(i => i.Disponible && 
+                               !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
+                                                           c.FechaTerminacionAnticipada == null && 
+                                                           DateTime.Now >= c.FechaInicio && 
+                                                           DateTime.Now <= c.FechaFin))
+                    .SumAsync(i => i.Precio)
+            };
+
+            return View(estadisticas);
+        }
+
     }
 }

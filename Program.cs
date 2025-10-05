@@ -1,6 +1,8 @@
 using Inmobiliaria.Models;
 using Inmobiliaria.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,10 +11,48 @@ builder.Services.AddControllersWithViews();
 
 // Configurar Entity Framework
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=localhost;Database=inmobiliaria;Uid=root;Pwd=;";
+    ?? "Data Source=inmobiliaria.db";
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// Detectar si es MySQL o SQLite basado en la cadena de conexión
+if (connectionString.Contains("Server="))
+{
+    // MySQL
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+}
+else
+{
+    // SQLite
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(connectionString));
+}
+
+// Configurar Autenticación
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
+
+// Configurar Autorización
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("SoloAdmin", policy =>
+        policy.RequireRole("Administrador"));
+    
+    // No usar política global para evitar bucles de redirección
+    // La autenticación se manejará a nivel de controlador
+});
+
+// Configurar HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
+
+// Registrar servicios
+builder.Services.AddScoped<Inmobiliaria.Services.PagoService>();
 
 // Inyección de dependencias para el repositorio de Propietarios y Inquilinos
 builder.Services.AddSingleton<RepositorioPropietario>();
@@ -35,10 +75,17 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Inicializar datos de prueba en desarrollo
+if (app.Environment.IsDevelopment())
+{
+    await DbInitializer.Seed(app.Services);
+}
 
 app.Run();

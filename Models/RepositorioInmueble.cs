@@ -54,8 +54,8 @@ namespace Inmobiliaria.Models
                                 Latitud = reader.IsDBNull(reader.GetOrdinal("Latitud")) ? 0 : reader.GetDecimal("Latitud"),
                                 Longitud = reader.IsDBNull(reader.GetOrdinal("Longitud")) ? 0 : reader.GetDecimal("Longitud"),
                                 PropietarioId = propietarioId,
-                                // Se crea el objeto Duenio y se asigna su Id directamente del valor leído.
-                                Duenio = new Propietario
+                                // Se crea el objeto Propietario y se asigna su Id directamente del valor leído.
+                                Propietario = new Propietario
                                 {
                                     Id = propietarioId,
                                     Nombre = reader.IsDBNull(reader.GetOrdinal("Nombre")) ? "" : reader.GetString("Nombre"),
@@ -93,7 +93,7 @@ namespace Inmobiliaria.Models
                                 Latitud = reader.IsDBNull(reader.GetOrdinal("Latitud")) ? 0 : reader.GetDecimal("Latitud"),
                                 Longitud = reader.IsDBNull(reader.GetOrdinal("Longitud")) ? 0 : reader.GetDecimal("Longitud"),
                                 PropietarioId = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId"),
-                                Duenio = new Propietario
+                                Propietario = new Propietario
                                 {
                                     Id = reader.IsDBNull(reader.GetOrdinal("PropietarioId")) ? 0 : reader.GetInt32("PropietarioId"),
                                     Nombre = reader.IsDBNull(reader.GetOrdinal("Nombre")) ? "" : reader.GetString("Nombre"),

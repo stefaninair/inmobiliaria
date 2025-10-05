@@ -23,8 +23,32 @@
                 <td>@Model.Ambientes</td>
             </tr>
             <tr>
+                <th>@Html.DisplayNameFor(model => model.Uso)</th>
+                <td>@Model.Uso</td>
+            </tr>
+            <tr>
                 <th>@Html.DisplayNameFor(model => model.Superficie)</th>
                 <td>@Model.Superficie m²</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Precio)</th>
+                <td>@Model.Precio.ToString("C")</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Disponible)</th>
+                <td>@(Model.Disponible ? "Sí" : "No")</td>
+            </tr>
+            <tr>
+                <th>Propietario</th>
+                <td>@Model.Propietario?.Nombre @Model.Propietario?.Apellido</td>
+            </tr>
+            <tr>
+                <th>Tipo de Inmueble</th>
+                <td>@Model.TipoInmueble?.Nombre</td>
+            </tr>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Observaciones)</th>
+                <td>@Model.Observaciones</td>
             </tr>
             <tr>
                 <th>@Html.DisplayNameFor(model => model.Latitud)</th>
@@ -33,10 +57,6 @@
             <tr>
                 <th>@Html.DisplayNameFor(model => model.Longitud)</th>
                 <td>@Model.Longitud</td>
-            </tr>
-            <tr>
-                <th>Propietario</th>
-                <td>@Model.Duenio?.Nombre @Model.Duenio?.Apellido</td>
             </tr>
             <tr>
                 <th>Habilitado</th>

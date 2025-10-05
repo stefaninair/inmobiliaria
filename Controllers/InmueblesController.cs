@@ -3,49 +3,69 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Inmobiliaria.Models;
+using Inmobiliaria.Data;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Inmobiliaria.Controllers
 {
     public class InmueblesController : Controller
     {
-        private readonly RepositorioInmueble repoInmueble;
-        private readonly RepositorioPropietario repoPropietario;
+        private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment env;
 
-        public InmueblesController(RepositorioInmueble repoI, RepositorioPropietario repoP, IWebHostEnvironment environment)
+        public InmueblesController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
-            repoInmueble = repoI;
-            repoPropietario = repoP;
+            _context = context;
             env = environment;
         }
 
-        private void CargarPropietarios()
+        private async Task CargarPropietarios()
         {
-            ViewBag.Propietarios = repoPropietario.ObtenerTodos();
+            ViewBag.Propietarios = await _context.Propietarios.ToListAsync();
+        }
+
+        private async Task CargarTiposInmueble()
+        {
+            ViewBag.TiposInmueble = await _context.TiposInmueble.ToListAsync();
         }
 
         // GET: Inmuebles
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var lista = repoInmueble.ObtenerTodos();
+            var lista = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .ToListAsync();
             ViewBag.Id = TempData["Id"];
             ViewBag.Mensaje = TempData["Mensaje"];
             return View(lista);
         }
 
-        // GET: Inmuebles/Create
-        public IActionResult Create()
+        // GET: Inmuebles/Disponibles
+        public async Task<IActionResult> Disponibles()
         {
-            CargarPropietarios();
+            var lista = await _context.Inmuebles
+                .Where(i => i.Disponible)
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .ToListAsync();
+            return View(lista);
+        }
+
+        // GET: Inmuebles/Create
+        public async Task<IActionResult> Create()
+        {
+            await CargarPropietarios();
+            await CargarTiposInmueble();
             return View();
         }
 
         // POST: Inmuebles/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Inmueble entidad)
+        public async Task<IActionResult> Create(Inmueble entidad)
         {
             try
             {
@@ -61,40 +81,44 @@ namespace Inmobiliaria.Controllers
                         entidad.Portada = entidad.PortadaFile.FileName;
                     }
 
-                    repoInmueble.Alta(entidad);
-                    TempData["Mensaje"] = "Inmueble creado correctamente";
+                    _context.Add(entidad);
+                    await _context.SaveChangesAsync();
+                    TempData["Success"] = "Inmueble creado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
 
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                 TempData["Error"] = "Errores de validación: " + string.Join(", ", errors);
-                CargarPropietarios();
+                await CargarPropietarios();
+                await CargarTiposInmueble();
                 return View(entidad);
             }
             catch (Exception ex)
             {
                 ViewBag.Error = ex.Message;
                 ViewBag.StackTrace = ex.StackTrace;
-                CargarPropietarios();
+                await CargarPropietarios();
+                await CargarTiposInmueble();
                 return View(entidad);
             }
         }
 
         // GET: Inmuebles/Edit/5
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var entidad = repoInmueble.ObtenerPorId(id);
+            var entidad = await _context.Inmuebles.FindAsync(id);
             if (entidad == null)
                 return NotFound();
 
-            CargarPropietarios();
+            await CargarPropietarios();
+            await CargarTiposInmueble();
             return View(entidad);
         }
 
         // POST: Inmuebles/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Inmueble entidad)
+        public async Task<IActionResult> Edit(int id, Inmueble entidad)
         {
             try
             {
@@ -113,29 +137,35 @@ namespace Inmobiliaria.Controllers
                         entidad.Portada = entidad.PortadaFile.FileName;
                     }
 
-                    repoInmueble.Modificacion(entidad);
-                    TempData["Mensaje"] = "Inmueble modificado correctamente";
+                    _context.Update(entidad);
+                    await _context.SaveChangesAsync();
+                    TempData["Success"] = "Inmueble actualizado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
 
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                 TempData["Error"] = "Errores de validación: " + string.Join(", ", errors);
-                CargarPropietarios();
+                await CargarPropietarios();
+                await CargarTiposInmueble();
                 return View(entidad);
             }
             catch (Exception ex)
             {
                 ViewBag.Error = ex.Message;
                 ViewBag.StackTrace = ex.StackTrace;
-                CargarPropietarios();
+                await CargarPropietarios();
+                await CargarTiposInmueble();
                 return View(entidad);
             }
         }
 
         // GET: Inmuebles/Details/5
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var entidad = repoInmueble.ObtenerPorId(id);
+            var entidad = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .FirstOrDefaultAsync(i => i.Id == id);
             if (entidad == null)
                 return NotFound();
 
@@ -143,9 +173,12 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Inmuebles/Delete/5
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var entidad = repoInmueble.ObtenerPorId(id);
+            var entidad = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .FirstOrDefaultAsync(i => i.Id == id);
             if (entidad == null)
                 return NotFound();
 
@@ -157,19 +190,27 @@ namespace Inmobiliaria.Controllers
         // POST: Inmuebles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             try
             {
-                repoInmueble.Baja(id);
-                TempData["Mensaje"] = "Eliminación realizada correctamente";
+                var entidad = await _context.Inmuebles.FindAsync(id);
+                if (entidad != null)
+                {
+                    _context.Inmuebles.Remove(entidad);
+                    await _context.SaveChangesAsync();
+                    TempData["Success"] = "Inmueble eliminado exitosamente.";
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 ViewBag.Error = ex.Message;
                 ViewBag.StackTrace = ex.StackTrace;
-                var entidad = repoInmueble.ObtenerPorId(id);
+                var entidad = await _context.Inmuebles
+                    .Include(i => i.Propietario)
+                    .Include(i => i.TipoInmueble)
+                    .FirstOrDefaultAsync(i => i.Id == id);
                 return View(entidad);
             }
         }

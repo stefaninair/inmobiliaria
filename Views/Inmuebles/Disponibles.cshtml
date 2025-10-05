@@ -1,18 +1,17 @@
 @model IEnumerable<Inmobiliaria.Models.Inmueble>
 
 @{
-    ViewData["Title"] = "Listado de Inmuebles";
-    var rnd = new Random();
+    ViewData["Title"] = "Inmuebles Disponibles";
 }
 
-<h1>Listado de Inmuebles</h1>
+<h1>Inmuebles Disponibles</h1>
 
 <p>
     <a class="btn btn-success" asp-action="Create">
         <i class="fa-solid fa-plus"></i> Nuevo Inmueble
     </a>
-    <a class="btn btn-info" asp-action="Disponibles">
-        <i class="fa-solid fa-check-circle"></i> Ver Disponibles
+    <a class="btn btn-secondary" asp-action="Index">
+        <i class="fa-solid fa-list"></i> Ver Todos
     </a>
 </p>
 
@@ -82,4 +81,3 @@
         }
     </tbody>
 </table>
-

@@ -1,4 +1,4 @@
-@model IEnumerable<Inmobiliaria.Models.Inmueble>
+@model Inmobiliaria.Models.PaginacionModel<Inmobiliaria.Models.Inmueble>
 
 @{
     ViewData["Title"] = "Listado de Inmuebles";
@@ -34,20 +34,26 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-md-12">
+        <p>Mostrando @Model.Items.Count de @Model.TotalElementos inmuebles</p>
+    </div>
+</div>
+
 <table class="table table-bordered table-striped">
     <thead class="thead-dark">
         <tr>
-            <th>@Html.DisplayNameFor(model => model.First().Id)</th>
-            <th>@Html.DisplayNameFor(model => model.First().Direccion)</th>
+            <th>ID</th>
+            <th>Dirección</th>
             <th>Propietario</th>
             <th>Tipo</th>
-            <th>@Html.DisplayNameFor(model => model.First().Precio)</th>
-            <th>@Html.DisplayNameFor(model => model.First().Disponible)</th>
+            <th>Precio</th>
+            <th>Disponible</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model)
+        @foreach (var item in Model.Items)
         {
             <tr>
                 <td>@item.Id</td>
@@ -103,4 +109,39 @@
         }
     </tbody>
 </table>
+
+<!-- Paginación -->
+@if (Model.TotalPaginas > 1)
+{
+    <nav aria-label="Paginación de inmuebles">
+        <ul class="pagination justify-content-center">
+            @if (Model.TienePaginaAnterior)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", new { pagina = Model.PaginaAnterior })">
+                        Anterior
+                    </a>
+                </li>
+            }
+            
+            @for (int i = Math.Max(1, Model.PaginaActual - 2); i <= Math.Min(Model.TotalPaginas, Model.PaginaActual + 2); i++)
+            {
+                <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { pagina = i })">
+                        @i
+                    </a>
+                </li>
+            }
+            
+            @if (Model.TienePaginaSiguiente)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", new { pagina = Model.PaginaSiguiente })">
+                        Siguiente
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
 

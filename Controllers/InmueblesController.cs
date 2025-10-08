@@ -34,15 +34,22 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Inmuebles
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pagina = 1, int elementosPorPagina = 5)
         {
+            var totalElementos = await _context.Inmuebles.CountAsync();
+            var offset = (pagina - 1) * elementosPorPagina;
+            
             var lista = await _context.Inmuebles
                 .Include(i => i.Propietario)
                 .Include(i => i.TipoInmueble)
+                .Skip(offset)
+                .Take(elementosPorPagina)
                 .ToListAsync();
+                
+            var paginacion = new PaginacionModel<Inmueble>(lista, pagina, elementosPorPagina, totalElementos);
             ViewBag.Id = TempData["Id"];
             ViewBag.Mensaje = TempData["Mensaje"];
-            return View(lista);
+            return View(paginacion);
         }
 
         // GET: Inmuebles/Disponibles

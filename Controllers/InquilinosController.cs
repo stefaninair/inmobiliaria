@@ -17,10 +17,10 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Inquilinos
-        public IActionResult Index()
+        public IActionResult Index(int pagina = 1, int elementosPorPagina = 5)
         {
-            var lista = repositorio.ObtenerTodos();
-            return View(lista);
+            var paginacion = repositorio.ObtenerPaginados(pagina, elementosPorPagina);
+            return View(paginacion);
         }
 
         // GET: Inquilinos/Create

@@ -55,10 +55,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Inmobiliaria.Services.PagoService>();
 
 // Inyección de dependencias para el repositorio de Propietarios y Inquilinos
-builder.Services.AddSingleton<RepositorioPropietario>();
-builder.Services.AddSingleton<RepositorioInquilino>();
-builder.Services.AddSingleton<RepositorioInmueble>();
-builder.Services.AddTransient<RepositorioContrato>();
+builder.Services.AddScoped<RepositorioPropietario>();
+builder.Services.AddScoped<RepositorioInquilino>();
+builder.Services.AddScoped<RepositorioInmueble>();
+builder.Services.AddScoped<RepositorioContrato>();
 
 
 var app = builder.Build();

@@ -30,16 +30,23 @@ namespace Inmobiliaria.Controllers
         }
 
         // GET: Contratos
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pagina = 1, int elementosPorPagina = 5)
         {
+            var totalElementos = await _context.Contratos.CountAsync();
+            var offset = (pagina - 1) * elementosPorPagina;
+            
             var lista = await _context.Contratos
                 .Include(c => c.Inquilino)
                 .Include(c => c.Inmueble)
                 .Include(c => c.CreadoPorUser)
                 .Include(c => c.TerminadoPorUser)
                 .OrderByDescending(c => c.CreadoEn)
+                .Skip(offset)
+                .Take(elementosPorPagina)
                 .ToListAsync();
-            return View(lista);
+                
+            var paginacion = new PaginacionModel<Contrato>(lista, pagina, elementosPorPagina, totalElementos);
+            return View(paginacion);
         }
 
         // GET: Contratos/Create

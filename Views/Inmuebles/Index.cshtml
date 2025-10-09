@@ -49,6 +49,7 @@
             <th>Tipo</th>
             <th>Precio</th>
             <th>Disponible</th>
+            <th>Portada</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -90,6 +91,16 @@
                     }
                 </td>
                 <td>
+                    @if (!string.IsNullOrEmpty(item.Portada))
+                    {
+                        <img src="~/img/@item.Portada" alt="Portada" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">Sin foto</span>
+                    }
+                </td>
+                <td>
                     <div class="btn-group" role="group">
                         <a class="btn btn-primary" asp-action="Edit" asp-route-id="@item.Id" title="Editar">
                             <i class="fa-solid fa-pen"></i>
@@ -102,6 +113,9 @@
                         }
                         <a class="btn btn-secondary" asp-action="Details" asp-route-id="@item.Id" title="Ver">
                             <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a class="btn btn-info" asp-action="VerFotos" asp-route-id="@item.Id" title="Ver Fotos">
+                            <i class="fa-solid fa-camera"></i>
                         </a>
                     </div>
                 </td>

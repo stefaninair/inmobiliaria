@@ -287,6 +287,58 @@ namespace Inmobiliaria.Controllers
             return View("ReporteInmuebles", inmueblesOcupados);
         }
 
+        // GET: Inmuebles/VerFotos/5
+        public async Task<IActionResult> VerFotos(int id)
+        {
+            var inmueble = await _context.Inmuebles
+                .Include(i => i.Propietario)
+                .Include(i => i.TipoInmueble)
+                .FirstOrDefaultAsync(i => i.Id == id);
+            
+            if (inmueble == null)
+                return NotFound();
+
+            return View(inmueble);
+        }
+
+        // API: Buscar propietarios
+        [HttpGet]
+        public async Task<IActionResult> BuscarPropietarios(string term)
+        {
+            if (string.IsNullOrEmpty(term))
+                return Json(new List<object>());
+
+            var propietarios = await _context.Propietarios
+                .Where(p => p.Nombre.Contains(term) || p.Apellido.Contains(term) || p.Email.Contains(term))
+                .Select(p => new { 
+                    id = p.Id, 
+                    text = $"{p.Nombre} {p.Apellido} ({p.Email})" 
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Json(propietarios);
+        }
+
+        // API: Buscar tipos de inmueble
+        [HttpGet]
+        public async Task<IActionResult> BuscarTiposInmueble(string term)
+        {
+            if (string.IsNullOrEmpty(term))
+                return Json(new List<object>());
+
+            var tipos = await _context.TiposInmueble
+                .Where(t => t.Nombre.Contains(term))
+                .Select(t => new { 
+                    id = t.Id, 
+                    text = t.Nombre 
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Json(tipos);
+        }
+
         // GET: Inmuebles/Estadisticas
         public async Task<IActionResult> Estadisticas()
         {

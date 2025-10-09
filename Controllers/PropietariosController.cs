@@ -71,6 +71,17 @@ namespace Inmobiliaria.Controllers
             return View(p);
         }
 
+        // GET: Propietarios/Details/5
+        public IActionResult Details(int id)
+        {
+            var p = repositorio.ObtenerPorId(id);
+            if (p == null)
+            {
+                return NotFound();
+            }
+            return View(p);
+        }
+
         // GET: Propietarios/Delete/5
         [Authorize(Policy = "SoloAdmin")]
         public IActionResult Delete(int id)

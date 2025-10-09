@@ -68,14 +68,8 @@
 
             <div class="form-group">
                 <label asp-for="PropietarioId" class="control-label">Propietario</label>
-                <select asp-for="PropietarioId" class="form-control">
-                    @foreach (var item in ltaPropietarios)
-                    {
-                        <option value="@item.Id" selected="@(item.Id == Model.PropietarioId)">
-                            @(item.Nombre + " " + item.Apellido)
-                        </option>
-                    }
-                </select>
+                <input type="text" id="propietarioSearch" class="form-control" placeholder="Buscar propietario..." value="@(Model.Propietario?.Nombre + " " + Model.Propietario?.Apellido)" />
+                <input type="hidden" asp-for="PropietarioId" id="propietarioId" />
                 <span asp-validation-for="PropietarioId" class="text-danger"></span>
             </div>
 

@@ -81,6 +81,10 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapControllerRoute("login", "entrar/{**accion}", new { controller = "Usuarios", action = "Login" });
+app.MapControllerRoute("rutaFija", "ruteo/{valor}", new { controller = "Home", action = "Ruta", valor = "defecto" });
+app.MapControllerRoute("fechas", "{controller=Home}/{action=Fecha}/{anio}/{mes}/{dia}");
+app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
 // Inicializar datos de prueba en desarrollo
 if (app.Environment.IsDevelopment())

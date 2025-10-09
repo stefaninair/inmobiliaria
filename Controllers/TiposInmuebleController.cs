@@ -1,42 +1,34 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using Inmobiliaria.Data;
 using Inmobiliaria.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inmobiliaria.Controllers
 {
     [Authorize]
     public class TiposInmuebleController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly RepositorioTipoInmueble _repositorio;
 
-        public TiposInmuebleController(ApplicationDbContext context)
+        public TiposInmuebleController(RepositorioTipoInmueble repositorio)
         {
-            _context = context;
+            _repositorio = repositorio;
         }
 
         // GET: TiposInmueble
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.TiposInmueble.ToListAsync());
+            var tiposInmueble = _repositorio.ObtenerTodos();
+            return View(tiposInmueble);
         }
 
         // GET: TiposInmueble/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public IActionResult Details(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var tipoInmueble = await _context.TiposInmueble
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var tipoInmueble = _repositorio.ObtenerPorId(id);
             if (tipoInmueble == null)
             {
                 return NotFound();
             }
-
             return View(tipoInmueble);
         }
 
@@ -49,27 +41,28 @@ namespace Inmobiliaria.Controllers
         // POST: TiposInmueble/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre")] TipoInmueble tipoInmueble)
+        public IActionResult Create(TipoInmueble tipoInmueble)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(tipoInmueble);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Tipo de inmueble creado exitosamente.";
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _repositorio.Alta(tipoInmueble);
+                    TempData["Success"] = "Tipo de inmueble creado exitosamente.";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al crear el tipo de inmueble: {ex.Message}";
+                }
             }
             return View(tipoInmueble);
         }
 
         // GET: TiposInmueble/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public IActionResult Edit(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var tipoInmueble = await _context.TiposInmueble.FindAsync(id);
+            var tipoInmueble = _repositorio.ObtenerPorId(id);
             if (tipoInmueble == null)
             {
                 return NotFound();
@@ -80,7 +73,7 @@ namespace Inmobiliaria.Controllers
         // POST: TiposInmueble/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre")] TipoInmueble tipoInmueble)
+        public IActionResult Edit(int id, TipoInmueble tipoInmueble)
         {
             if (id != tipoInmueble.Id)
             {
@@ -91,65 +84,44 @@ namespace Inmobiliaria.Controllers
             {
                 try
                 {
-                    _context.Update(tipoInmueble);
-                    await _context.SaveChangesAsync();
+                    _repositorio.Modificacion(tipoInmueble);
                     TempData["Success"] = "Tipo de inmueble actualizado exitosamente.";
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!TipoInmuebleExists(tipoInmueble.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    TempData["Error"] = $"Error al actualizar el tipo de inmueble: {ex.Message}";
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(tipoInmueble);
         }
 
         // GET: TiposInmueble/Delete/5
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> Delete(int? id)
+        public IActionResult Delete(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var tipoInmueble = await _context.TiposInmueble
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var tipoInmueble = _repositorio.ObtenerPorId(id);
             if (tipoInmueble == null)
             {
                 return NotFound();
             }
-
             return View(tipoInmueble);
         }
 
         // POST: TiposInmueble/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(int id)
         {
-            var tipoInmueble = await _context.TiposInmueble.FindAsync(id);
-            if (tipoInmueble != null)
+            try
             {
-                _context.TiposInmueble.Remove(tipoInmueble);
-                await _context.SaveChangesAsync();
+                _repositorio.Baja(id);
                 TempData["Success"] = "Tipo de inmueble eliminado exitosamente.";
             }
-
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al eliminar el tipo de inmueble: {ex.Message}";
+            }
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool TipoInmuebleExists(int id)
-        {
-            return _context.TiposInmueble.Any(e => e.Id == id);
         }
     }
 }

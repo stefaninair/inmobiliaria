@@ -1,6 +1,6 @@
 # 🏢 Sistema Inmobiliaria
 
-Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core MVC con Entity Framework Core y MySQL.
+Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core MVC con ADO.NET nativo y SQLite/MySQL.
 
 ## 📋 Características Principales
 
@@ -46,19 +46,19 @@ Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core
 ## 🚀 Tecnologías Utilizadas
 
 - **Backend**: ASP.NET Core 8.0 MVC
-- **Base de Datos**: MySQL 8.0
-- **ORM**: Entity Framework Core 8.0
+- **Base de Datos**: SQLite (desarrollo) / MySQL (producción)
+- **Acceso a Datos**: ADO.NET nativo
 - **Autenticación**: Cookie Authentication
 - **Encriptación**: BCrypt.Net-Next
 - **Frontend**: Bootstrap 5.3, Font Awesome 6.5
 - **Validación**: Data Annotations
-- **Migraciones**: EF Core Migrations
+- **Conexión**: System.Data.SQLite / MySql.Data
 
 ## 📦 Instalación y Configuración
 
 ### Prerrequisitos
 - .NET 8.0 SDK
-- MySQL 8.0
+- SQLite (incluido) o MySQL 8.0 con XAMPP (opcional)
 - Visual Studio 2022 o VS Code
 
 ### Pasos de Instalación
@@ -70,14 +70,22 @@ Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core
    ```
 
 2. **Configurar la base de datos**
-   - Crear base de datos MySQL: `inmobiliaria`
-   - Actualizar connection string en `appsettings.json`:
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost;Database=inmobiliaria;Uid=root;Pwd=tu_password;SslMode=none;"
-     }
-   }
+
+   **Opción A: SQLite (por defecto)**
+   ```bash
+   # No requiere configuración adicional
+   dotnet run
+   ```
+
+   **Opción B: MySQL con XAMPP**
+   ```bash
+   # 1. Instalar XAMPP desde https://www.apachefriends.org/
+   # 2. Iniciar MySQL en XAMPP
+   # 3. Ejecutar script de configuración
+   .\Scripts\setup_mysql.ps1
+   
+   # 4. Cambiar a MySQL
+   .\Scripts\switch_database.ps1 -Database mysql
    ```
 
 3. **Restaurar dependencias**
@@ -85,29 +93,33 @@ Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core
    dotnet restore
    ```
 
-4. **Ejecutar migraciones**
-   ```bash
-   dotnet ef database update
-   ```
-
-5. **Ejecutar la aplicación**
+4. **Ejecutar la aplicación**
    ```bash
    dotnet run
    ```
+   - La base de datos se crea automáticamente al iniciar
+   - Los datos de prueba se insertan automáticamente
 
-6. **Acceder a la aplicación**
+5. **Acceder a la aplicación**
    - URL: `https://localhost:7000` o `http://localhost:5000`
+
+### Scripts Disponibles
+
+- `Scripts\switch_database.ps1 -Database sqlite` - Cambiar a SQLite
+- `Scripts\switch_database.ps1 -Database mysql` - Cambiar a MySQL
+- `Scripts\setup_mysql.ps1` - Configurar MySQL con XAMPP
+- `Scripts\inmobiliaria_mysql.sql` - Script SQL para MySQL
 
 ## 👤 Credenciales de Demo
 
 ### Administrador
-- **Email**: `admin@demo.com`
-- **Contraseña**: `Admin123!`
+- **Email**: `admin@inmobiliaria.com`
+- **Contraseña**: `123456`
 - **Permisos**: Acceso completo a todas las funcionalidades
 
 ### Empleado
-- **Email**: `empleado@demo.com`
-- **Contraseña**: `Empleado123!`
+- **Email**: `juan@inmobiliaria.com`
+- **Contraseña**: `123456`
 - **Permisos**: Acceso limitado (no puede eliminar registros)
 
 ## 🗄️ Estructura de la Base de Datos
@@ -132,11 +144,10 @@ Sistema web completo para gestión de inmobiliarias desarrollado en ASP.NET Core
 ```
 inmobiliaria/
 ├── Controllers/          # Controladores MVC
-├── Models/              # Modelos de datos
+├── Models/              # Modelos de datos y repositorios
 ├── Views/               # Vistas Razor
-├── Data/                # Contexto de EF y inicializador
+├── Data/                # Conexión ADO.NET y inicializador
 ├── Services/            # Servicios de negocio
-├── Migrations/          # Migraciones de EF
 ├── Scripts/             # Scripts SQL
 ├── Documentation/       # Documentación
 └── wwwroot/            # Archivos estáticos
@@ -201,9 +212,9 @@ inmobiliaria/
 
 ### Optimizaciones
 - Índices en foreign keys
-- Consultas optimizadas con Include
+- Consultas SQL optimizadas
 - Paginación en listados
-- Caché de datos estáticos
+- Conexiones ADO.NET eficientes
 
 ### Monitoreo
 - Logs de errores
@@ -230,7 +241,8 @@ inmobiliaria/
 ### Archivos de Documentación
 - `README.md`: Este archivo
 - `Documentation/diagrama_er.md`: Diagrama de base de datos
-- `Scripts/backup_database.sql`: Script de respaldo
+- `Scripts/Inmboliaria.sql`: Script de MySQL
+- `Scripts/sqlite_schema.sql`: Script de SQLite
 - Comentarios en código
 
 ### Diagramas
@@ -242,7 +254,7 @@ inmobiliaria/
 
 ### Requisitos de Producción
 - Servidor con .NET 8.0 Runtime
-- MySQL 8.0
+- SQLite (incluido) o MySQL 8.0
 - IIS o Nginx
 - Certificado SSL
 

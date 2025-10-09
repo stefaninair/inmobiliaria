@@ -1,227 +1,298 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Inmobiliaria.Data;
 using Inmobiliaria.Models;
-using System.Security.Claims;
-using BCrypt.Net;
+using Inmobiliaria.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Data;
+using MySql.Data.MySqlClient;
+using System.Data.SQLite;
 
 namespace Inmobiliaria.Controllers
 {
-    [AllowAnonymous]
     public class AuthController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly DatabaseConnection _dbConnection;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(DatabaseConnection dbConnection)
         {
-            _context = context;
+            _dbConnection = dbConnection;
         }
 
-        // GET: Auth/Login
+        [HttpGet]
         public IActionResult Login()
         {
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                return RedirectToAction("Index", "Home");
-            }
             return View();
         }
 
-        // POST: Auth/Login
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string email, string clave)
         {
             try
             {
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(clave))
                 {
-                    ViewBag.Error = "Email y clave son requeridos";
+                    TempData["Error"] = "Email y contraseña son requeridos.";
                     return View();
                 }
 
-                var usuario = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.Email == email);
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
 
-                if (usuario == null || !BCrypt.Net.BCrypt.Verify(clave, usuario.ClaveHash))
+                var query = "SELECT Id, Nombre, Apellido, Email, Clave, Rol FROM Usuarios WHERE Email = @email";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@email", email));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
                 {
-                    ViewBag.Error = "Credenciales inválidas";
-                    return View();
+                    var hashedPassword = reader.GetString("Clave");
+                    if (BCrypt.Net.BCrypt.Verify(clave, hashedPassword))
+                    {
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.Name, reader.GetString("Nombre")),
+                            new Claim(ClaimTypes.Surname, reader.GetString("Apellido")),
+                            new Claim(ClaimTypes.Email, reader.GetString("Email")),
+                            new Claim(ClaimTypes.Role, reader.GetString("Rol")),
+                            new Claim("UserId", reader.GetInt32("Id").ToString())
+                        };
+
+                        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        var authProperties = new AuthenticationProperties
+                        {
+                            IsPersistent = true,
+                            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                        };
+
+                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                        TempData["Success"] = "Inicio de sesión exitoso.";
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
 
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-                    new Claim(ClaimTypes.Name, usuario.Nombre),
-                    new Claim(ClaimTypes.Email, usuario.Email),
-                    new Claim(ClaimTypes.Role, usuario.RolNombre)
-                };
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
-
-                TempData["Success"] = $"Bienvenido, {usuario.Nombre}";
-                return RedirectToAction("Index", "Home");
+                TempData["Error"] = "Credenciales inválidas.";
+                return View();
             }
             catch (Exception ex)
             {
-                ViewBag.Error = "Error al iniciar sesión: " + ex.Message;
+                TempData["Error"] = $"Error al iniciar sesión: {ex.Message}";
                 return View();
             }
         }
 
-        // GET: Auth/Logout
+        [HttpGet]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            TempData["Success"] = "Sesión cerrada exitosamente";
             return RedirectToAction("Login");
         }
 
-        // GET: Auth/AccessDenied
-        public IActionResult AccessDenied()
-        {
-            return View();
-        }
-
-        // GET: Auth/Perfil
         [HttpGet]
-        public async Task<IActionResult> Perfil()
+        public IActionResult Perfil()
         {
-            var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "1");
-            var usuario = await _context.Usuarios.FindAsync(userId);
-            
-            if (usuario == null)
-                return NotFound();
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (userIdClaim == null)
+            {
+                return RedirectToAction("Login");
+            }
 
-            return View(usuario);
-        }
-
-        // POST: Auth/CambiarPassword
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CambiarPassword(string claveActual, string nuevaClave, string confirmarClave)
-        {
             try
             {
-                var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "1");
-                var usuario = await _context.Usuarios.FindAsync(userId);
-                
-                if (usuario == null)
-                    return NotFound();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
 
-                // Validar clave actual
-                if (!BCrypt.Net.BCrypt.Verify(claveActual, usuario.ClaveHash))
+                var query = "SELECT Id, Nombre, Email, Rol, AvatarPath FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
                 {
-                    TempData["Error"] = "La clave actual es incorrecta.";
+                    var usuario = new Usuario
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Nombre = reader.GetString("Nombre"),
+                        Email = reader.GetString("Email"),
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
+                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
+                    };
+                    Console.WriteLine($"Avatar cargado: {usuario.AvatarPath}");
+                    return View(usuario);
+                }
+
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar el perfil: {ex.Message}";
+                return RedirectToAction("Login");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CambiarAvatar(IFormFile avatarFile)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (userIdClaim == null)
+            {
+                return RedirectToAction("Login");
+            }
+
+            try
+            {
+                if (avatarFile == null || avatarFile.Length == 0)
+                {
+                    TempData["Error"] = "Debe seleccionar un archivo.";
                     return RedirectToAction("Perfil");
                 }
 
-                // Validar nueva clave
-                if (string.IsNullOrWhiteSpace(nuevaClave) || nuevaClave.Length < 6)
+                Console.WriteLine($"Archivo recibido: {avatarFile.FileName}, Tamaño: {avatarFile.Length}, Tipo: {avatarFile.ContentType}");
+
+                // Validar tipo de archivo
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+                if (!allowedTypes.Contains(avatarFile.ContentType))
                 {
-                    TempData["Error"] = "La nueva clave debe tener al menos 6 caracteres.";
+                    TempData["Error"] = "Solo se permiten archivos JPG, PNG y GIF.";
+                    return RedirectToAction("Perfil");
+                }
+
+                // Validar tamaño (2MB máximo)
+                if (avatarFile.Length > 2 * 1024 * 1024)
+                {
+                    TempData["Error"] = "El archivo no puede ser mayor a 2MB.";
+                    return RedirectToAction("Perfil");
+                }
+
+                // Crear directorio de avatares si no existe
+                var avatarsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+                if (!Directory.Exists(avatarsDir))
+                {
+                    Directory.CreateDirectory(avatarsDir);
+                }
+
+                // Generar nombre único para el archivo
+                var fileExtension = Path.GetExtension(avatarFile.FileName);
+                var fileName = $"avatar_{userIdClaim}_{DateTime.Now:yyyyMMddHHmmss}{fileExtension}";
+                var filePath = Path.Combine(avatarsDir, fileName);
+
+                // Guardar archivo
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await avatarFile.CopyToAsync(stream);
+                }
+
+                // Actualizar ruta en base de datos
+                var relativePath = $"uploads/avatars/{fileName}";
+                Console.WriteLine($"Actualizando avatar en BD: {relativePath} para usuario {userIdClaim}");
+                
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "UPDATE Usuarios SET AvatarPath = @avatarPath WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@avatarPath", relativePath));
+                command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
+
+                var rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine($"Filas afectadas: {rowsAffected}");
+
+                TempData["Success"] = "Avatar actualizado exitosamente.";
+                return RedirectToAction("Perfil");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cambiar el avatar: {ex.Message}";
+                return RedirectToAction("Perfil");
+            }
+        }
+
+        [HttpPost]
+        public IActionResult CambiarPassword(string claveActual, string nuevaClave, string confirmarClave)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (userIdClaim == null)
+            {
+                return RedirectToAction("Login");
+            }
+
+            try
+            {
+                if (string.IsNullOrEmpty(claveActual) || string.IsNullOrEmpty(nuevaClave) || string.IsNullOrEmpty(confirmarClave))
+                {
+                    TempData["Error"] = "Todos los campos son requeridos.";
+                    return RedirectToAction("Perfil");
+                }
+
+                if (nuevaClave.Length < 6)
+                {
+                    TempData["Error"] = "La nueva contraseña debe tener al menos 6 caracteres.";
                     return RedirectToAction("Perfil");
                 }
 
                 if (nuevaClave != confirmarClave)
                 {
-                    TempData["Error"] = "Las claves nuevas no coinciden.";
+                    TempData["Error"] = "Las contraseñas no coinciden.";
                     return RedirectToAction("Perfil");
                 }
 
-                // Actualizar clave
-                usuario.ClaveHash = BCrypt.Net.BCrypt.HashPassword(nuevaClave);
-                _context.Update(usuario);
-                await _context.SaveChangesAsync();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
 
-                TempData["Success"] = "Clave cambiada correctamente.";
+                // Verificar contraseña actual
+                var query = "SELECT Clave FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    var hashedPassword = reader.GetString("Clave");
+                    if (!BCrypt.Net.BCrypt.Verify(claveActual, hashedPassword))
+                    {
+                        TempData["Error"] = "La contraseña actual es incorrecta.";
+                        return RedirectToAction("Perfil");
+                    }
+                }
+                else
+                {
+                    TempData["Error"] = "Usuario no encontrado.";
+                    return RedirectToAction("Login");
+                }
+
+                reader.Close();
+
+                // Actualizar contraseña
+                var newHashedPassword = BCrypt.Net.BCrypt.HashPassword(nuevaClave);
+                var updateQuery = "UPDATE Usuarios SET Clave = @nuevaClave WHERE Id = @id";
+                using var updateCommand = connection.CreateCommand();
+                updateCommand.CommandText = updateQuery;
+                updateCommand.Parameters.Add(CreateParameter(updateCommand, "@nuevaClave", newHashedPassword));
+                updateCommand.Parameters.Add(CreateParameter(updateCommand, "@id", int.Parse(userIdClaim)));
+
+                updateCommand.ExecuteNonQuery();
+
+                TempData["Success"] = "Contraseña actualizada exitosamente.";
                 return RedirectToAction("Perfil");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error al cambiar la clave: " + ex.Message;
+                TempData["Error"] = $"Error al cambiar la contraseña: {ex.Message}";
                 return RedirectToAction("Perfil");
             }
         }
 
-        // POST: Auth/CambiarAvatar
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CambiarAvatar(IFormFile avatarFile)
+        private IDbDataParameter CreateParameter(IDbCommand command, string parameterName, object value)
         {
-            try
-            {
-                var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "1");
-                var usuario = await _context.Usuarios.FindAsync(userId);
-                
-                if (usuario == null)
-                    return NotFound();
-
-                if (avatarFile != null && avatarFile.Length > 0)
-                {
-                    // Validar tipo de archivo
-                    var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
-                    if (!allowedTypes.Contains(avatarFile.ContentType))
-                    {
-                        TempData["Error"] = "Solo se permiten archivos JPG, PNG o GIF.";
-                        return RedirectToAction("Perfil");
-                    }
-
-                    // Validar tamaño (máximo 2MB)
-                    if (avatarFile.Length > 2 * 1024 * 1024)
-                    {
-                        TempData["Error"] = "El archivo no puede ser mayor a 2MB.";
-                        return RedirectToAction("Perfil");
-                    }
-
-                    // Crear directorio si no existe
-                    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
-                    if (!Directory.Exists(uploadsPath))
-                        Directory.CreateDirectory(uploadsPath);
-
-                    // Generar nombre único
-                    var fileName = $"avatar_{userId}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(avatarFile.FileName)}";
-                    var filePath = Path.Combine(uploadsPath, fileName);
-
-                    // Guardar archivo
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await avatarFile.CopyToAsync(stream);
-                    }
-
-                    // Eliminar avatar anterior si existe
-                    if (!string.IsNullOrEmpty(usuario.AvatarPath))
-                    {
-                        var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", usuario.AvatarPath);
-                        if (System.IO.File.Exists(oldPath))
-                            System.IO.File.Delete(oldPath);
-                    }
-
-                    // Actualizar ruta del avatar
-                    usuario.AvatarPath = $"uploads/avatars/{fileName}";
-                    _context.Update(usuario);
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = "Avatar actualizado correctamente.";
-                }
-                else
-                {
-                    TempData["Error"] = "Debe seleccionar un archivo.";
-                }
-
-                return RedirectToAction("Perfil");
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = "Error al cambiar el avatar: " + ex.Message;
-                return RedirectToAction("Perfil");
-            }
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Value = value ?? DBNull.Value;
+            return parameter;
         }
     }
 }

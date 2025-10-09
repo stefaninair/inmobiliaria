@@ -1,46 +1,90 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Inmobiliaria.Data;
 using Inmobiliaria.Models;
+using Inmobiliaria.Data;
 using Microsoft.AspNetCore.Authorization;
-using BCrypt.Net;
+using System.Data;
+using MySql.Data.MySqlClient;
+using System.Data.SQLite;
 
 namespace Inmobiliaria.Controllers
 {
     [Authorize(Roles = "Administrador")]
     public class UsuariosController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly DatabaseConnection _dbConnection;
 
-        public UsuariosController(ApplicationDbContext context, IWebHostEnvironment env)
+        public UsuariosController(DatabaseConnection dbConnection)
         {
-            _context = context;
-            _env = env;
+            _dbConnection = dbConnection;
         }
 
         // GET: Usuarios
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.Usuarios.ToListAsync());
+            var usuarios = new List<Usuario>();
+            try
+            {
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios ORDER BY Id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    usuarios.Add(new Usuario
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Nombre = reader.GetString("Nombre"),
+                        Email = reader.GetString("Email"),
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
+                        ClaveHash = reader.GetString("Clave")
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar usuarios: {ex.Message}";
+            }
+
+            return View(usuarios);
         }
 
         // GET: Usuarios/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public IActionResult Details(int id)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", id));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    var usuario = new Usuario
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Nombre = reader.GetString("Nombre"),
+                        Email = reader.GetString("Email"),
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
+                        ClaveHash = reader.GetString("Clave")
+                    };
+                    return View(usuario);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar el usuario: {ex.Message}";
             }
 
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
-
-            return View(usuario);
+            return NotFound();
         }
 
         // GET: Usuarios/Create
@@ -52,48 +96,75 @@ namespace Inmobiliaria.Controllers
         // POST: Usuarios/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Email,ClaveHash,Rol,Nombre,AvatarPath")] Usuario usuario, string clave)
+        public IActionResult Create(Usuario usuario)
         {
             if (ModelState.IsValid)
             {
-                // Verificar si el email ya existe
-                if (await _context.Usuarios.AnyAsync(u => u.Email == usuario.Email))
+                try
                 {
-                    ModelState.AddModelError("Email", "El email ya está en uso");
-                    return View(usuario);
+                    using var connection = _dbConnection.GetConnection();
+                    connection.Open();
+
+                    var query = "INSERT INTO Usuarios (Nombre, Email, Clave, Rol) VALUES (@nombre, @email, @clave, @rol)";
+                    using var command = connection.CreateCommand();
+                    command.CommandText = query;
+                    command.Parameters.Add(CreateParameter(command, "@nombre", usuario.Nombre));
+                    command.Parameters.Add(CreateParameter(command, "@email", usuario.Email));
+                    command.Parameters.Add(CreateParameter(command, "@clave", BCrypt.Net.BCrypt.HashPassword(usuario.ClaveHash)));
+                    command.Parameters.Add(CreateParameter(command, "@rol", usuario.Rol.ToString()));
+
+                    command.ExecuteNonQuery();
+
+                    TempData["Success"] = "Usuario creado exitosamente.";
+                    return RedirectToAction(nameof(Index));
                 }
-
-                // Hashear la clave
-                usuario.ClaveHash = BCrypt.Net.BCrypt.HashPassword(clave);
-
-                _context.Add(usuario);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Usuario creado exitosamente.";
-                return RedirectToAction(nameof(Index));
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al crear el usuario: {ex.Message}";
+                }
             }
             return View(usuario);
         }
 
         // GET: Usuarios/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public IActionResult Edit(int id)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", id));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    var usuario = new Usuario
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Nombre = reader.GetString("Nombre"),
+                        Email = reader.GetString("Email"),
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
+                        ClaveHash = reader.GetString("Clave")
+                    };
+                    return View(usuario);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar el usuario: {ex.Message}";
             }
 
-            var usuario = await _context.Usuarios.FindAsync(id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
-            return View(usuario);
+            return NotFound();
         }
 
         // POST: Usuarios/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Email,ClaveHash,Rol,Nombre,AvatarPath")] Usuario usuario)
+        public IActionResult Edit(int id, Usuario usuario)
         {
             if (id != usuario.Id)
             {
@@ -104,71 +175,97 @@ namespace Inmobiliaria.Controllers
             {
                 try
                 {
-                    // Verificar si el email ya existe en otro usuario
-                    if (await _context.Usuarios.AnyAsync(u => u.Email == usuario.Email && u.Id != usuario.Id))
-                    {
-                        ModelState.AddModelError("Email", "El email ya está en uso");
-                        return View(usuario);
-                    }
+                    using var connection = _dbConnection.GetConnection();
+                    connection.Open();
 
-                    _context.Update(usuario);
-                    await _context.SaveChangesAsync();
+                    var query = "UPDATE Usuarios SET Nombre = @nombre, Email = @email, Rol = @rol WHERE Id = @id";
+                    using var command = connection.CreateCommand();
+                    command.CommandText = query;
+                    command.Parameters.Add(CreateParameter(command, "@id", usuario.Id));
+                    command.Parameters.Add(CreateParameter(command, "@nombre", usuario.Nombre));
+                    command.Parameters.Add(CreateParameter(command, "@email", usuario.Email));
+                    command.Parameters.Add(CreateParameter(command, "@rol", usuario.Rol.ToString()));
+
+                    command.ExecuteNonQuery();
+
                     TempData["Success"] = "Usuario actualizado exitosamente.";
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!UsuarioExists(usuario.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    TempData["Error"] = $"Error al actualizar el usuario: {ex.Message}";
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(usuario);
         }
 
         // GET: Usuarios/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public IActionResult Delete(int id)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", id));
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    var usuario = new Usuario
+                    {
+                        Id = reader.GetInt32("Id"),
+                        Nombre = reader.GetString("Nombre"),
+                        Email = reader.GetString("Email"),
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
+                        ClaveHash = reader.GetString("Clave")
+                    };
+                    return View(usuario);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar el usuario: {ex.Message}";
             }
 
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
-
-            return View(usuario);
+            return NotFound();
         }
 
         // POST: Usuarios/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(int id)
         {
-            var usuario = await _context.Usuarios.FindAsync(id);
-            if (usuario != null)
+            try
             {
-                _context.Usuarios.Remove(usuario);
-                await _context.SaveChangesAsync();
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
+
+                var query = "DELETE FROM Usuarios WHERE Id = @id";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@id", id));
+
+                command.ExecuteNonQuery();
+
                 TempData["Success"] = "Usuario eliminado exitosamente.";
             }
-
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al eliminar el usuario: {ex.Message}";
+            }
             return RedirectToAction(nameof(Index));
         }
 
-        private bool UsuarioExists(int id)
+        private IDbDataParameter CreateParameter(IDbCommand command, string parameterName, object value)
         {
-            return _context.Usuarios.Any(e => e.Id == id);
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Value = value ?? DBNull.Value;
+            return parameter;
         }
     }
 }
-

@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Inmuebles por Propietario";
+}
+
+<h1>Inmuebles por Propietario</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form asp-action="PorPropietario" method="post">
+            <div class="form-group">
+                <label for="propietarioId" class="form-label">Seleccionar Propietario:</label>
+                <select name="propietarioId" id="propietarioId" class="form-control" required>
+                    <option value="">-- Seleccionar Propietario --</option>
+                    @if (ViewBag.Propietarios != null)
+                    {
+                        @foreach (var propietario in ViewBag.Propietarios)
+                        {
+                            <option value="@propietario.Id" selected="@(ViewBag.PropietarioSeleccionado == propietario.Id)">
+                                @propietario.Nombre @propietario.Apellido
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-search"></i> Buscar
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (ViewBag.PropietarioSeleccionado != null)
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-info-circle"></i> Mostrando inmuebles del propietario seleccionado.
+    </div>
+}

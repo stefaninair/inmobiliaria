@@ -10,10 +10,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title text-primary">
-                    <i class="fa-solid fa-building"></i>
-                </h5>
-                <h3 class="text-primary">@Model.TotalInmuebles</h3>
+                <h3 class="text-primary">@Model.Total</h3>
                 <p class="card-text">Total de Inmuebles</p>
             </div>
         </div>
@@ -21,10 +18,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title text-success">
-                    <i class="fa-solid fa-check-circle"></i>
-                </h5>
-                <h3 class="text-success">@Model.InmueblesDisponibles</h3>
+                <h3 class="text-success">@Model.Disponibles</h3>
                 <p class="card-text">Disponibles</p>
             </div>
         </div>
@@ -32,10 +26,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title text-warning">
-                    <i class="fa-solid fa-users"></i>
-                </h5>
-                <h3 class="text-warning">@Model.InmueblesOcupados</h3>
+                <h3 class="text-warning">@Model.Ocupados</h3>
                 <p class="card-text">Ocupados</p>
             </div>
         </div>
@@ -43,11 +34,8 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title text-info">
-                    <i class="fa-solid fa-home"></i>
-                </h5>
-                <h3 class="text-info">@Model.InmueblesLibres</h3>
-                <p class="card-text">Libres</p>
+                <h3 class="text-info">@Model.ValorTotal.ToString("C")</h3>
+                <p class="card-text">Valor Total</p>
             </div>
         </div>
     </div>
@@ -57,81 +45,35 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Información General</h5>
+                <h5>Resumen Financiero</h5>
             </div>
             <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><i class="fa-solid fa-user-tie text-primary"></i> <strong>Total Propietarios:</strong> @Model.TotalPropietarios</li>
-                    <li><i class="fa-solid fa-dollar-sign text-success"></i> <strong>Ingresos Potenciales:</strong> @Model.IngresosPotenciales.ToString("C")</li>
-                    <li><i class="fa-solid fa-percentage text-info"></i> <strong>Ocupación:</strong> @(Model.TotalInmuebles > 0 ? Math.Round(Model.InmueblesOcupados * 100.0 / Model.TotalInmuebles, 1) : 0)%</li>
-                </ul>
+                <p><strong>Valor Promedio:</strong> @Model.ValorPromedio.ToString("C")</p>
+                <p><strong>Total de Inmuebles:</strong> @Model.Total</p>
+                <p><strong>Disponibles:</strong> @Model.Disponibles</p>
+                <p><strong>Ocupados:</strong> @Model.Ocupados</p>
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Acciones Rápidas</h5>
+                <h5>Distribución</h5>
             </div>
             <div class="card-body">
-                <div class="list-group">
-                    <a class="list-group-item list-group-item-action" asp-action="Libres">
-                        <i class="fa-solid fa-home text-success"></i>
-                        Ver Inmuebles Libres
-                    </a>
-                    <a class="list-group-item list-group-item-action" asp-action="Ocupados">
-                        <i class="fa-solid fa-users text-warning"></i>
-                        Ver Inmuebles Ocupados
-                    </a>
-                    <a class="list-group-item list-group-item-action" asp-action="PorPropietario">
-                        <i class="fa-solid fa-user-tie text-info"></i>
-                        Reporte por Propietario
-                    </a>
-                    <a class="list-group-item list-group-item-action" asp-action="Index">
-                        <i class="fa-solid fa-list text-secondary"></i>
-                        Ver Todos los Inmuebles
-                    </a>
+                @{
+                    var porcentajeDisponibles = Model.Total > 0 ? (Model.Disponibles * 100.0 / Model.Total) : 0;
+                    var porcentajeOcupados = Model.Total > 0 ? (Model.Ocupados * 100.0 / Model.Total) : 0;
+                }
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-success" style="width: @porcentajeDisponibles%"></div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Distribución de Inmuebles</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Estado de Inmuebles</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-success" style="width: @(Model.TotalInmuebles > 0 ? (Model.InmueblesDisponibles * 100.0 / Model.TotalInmuebles) : 0)%">
-                                Disponibles: @Model.InmueblesDisponibles
-                            </div>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-danger" style="width: @(Model.TotalInmuebles > 0 ? ((Model.TotalInmuebles - Model.InmueblesDisponibles) * 100.0 / Model.TotalInmuebles) : 0)%">
-                                No Disponibles: @(Model.TotalInmuebles - Model.InmueblesDisponibles)
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Ocupación</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-warning" style="width: @(Model.TotalInmuebles > 0 ? (Model.InmueblesOcupados * 100.0 / Model.TotalInmuebles) : 0)%">
-                                Ocupados: @Model.InmueblesOcupados
-                            </div>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-info" style="width: @(Model.TotalInmuebles > 0 ? (Model.InmueblesLibres * 100.0 / Model.TotalInmuebles) : 0)%">
-                                Libres: @Model.InmueblesLibres
-                            </div>
-                        </div>
-                    </div>
+                <small class="text-success">Disponibles: @porcentajeDisponibles.ToString("F1")%</small>
+                
+                <div class="progress">
+                    <div class="progress-bar bg-warning" style="width: @porcentajeOcupados%"></div>
                 </div>
+                <small class="text-warning">Ocupados: @porcentajeOcupados.ToString("F1")%</small>
             </div>
         </div>
     </div>
@@ -139,7 +81,6 @@
 
 <div class="mt-3">
     <a class="btn btn-secondary" asp-action="Index">
-        <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+        <i class="fa-solid fa-arrow-left"></i> Volver a Inmuebles
     </a>
 </div>
-

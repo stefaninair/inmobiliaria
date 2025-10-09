@@ -1,374 +1,236 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
 using Inmobiliaria.Models;
-using Inmobiliaria.Data;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inmobiliaria.Controllers
 {
     [Authorize]
     public class InmueblesController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment env;
+        private readonly RepositorioInmueble _repositorio;
+        private readonly RepositorioPropietario _repositorioPropietario;
+        private readonly RepositorioTipoInmueble _repositorioTipoInmueble;
 
-        public InmueblesController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public InmueblesController(RepositorioInmueble repositorio, RepositorioPropietario repositorioPropietario, RepositorioTipoInmueble repositorioTipoInmueble)
         {
-            _context = context;
-            env = environment;
-        }
-
-        private async Task CargarPropietarios()
-        {
-            ViewBag.Propietarios = await _context.Propietarios.ToListAsync();
-        }
-
-        private async Task CargarTiposInmueble()
-        {
-            ViewBag.TiposInmueble = await _context.TiposInmueble.ToListAsync();
+            _repositorio = repositorio;
+            _repositorioPropietario = repositorioPropietario;
+            _repositorioTipoInmueble = repositorioTipoInmueble;
         }
 
         // GET: Inmuebles
-        public async Task<IActionResult> Index(int pagina = 1, int elementosPorPagina = 5)
+        public IActionResult Index(int pagina = 1, int tamanoPagina = 5)
         {
-            var totalElementos = await _context.Inmuebles.CountAsync();
-            var offset = (pagina - 1) * elementosPorPagina;
+            var totalElementos = _repositorio.Contar();
+            var inmuebles = _repositorio.ObtenerPaginados(pagina, tamanoPagina);
             
-            var lista = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .Skip(offset)
-                .Take(elementosPorPagina)
-                .ToListAsync();
-                
-            var paginacion = new PaginacionModel<Inmueble>(lista, pagina, elementosPorPagina, totalElementos);
-            ViewBag.Id = TempData["Id"];
-            ViewBag.Mensaje = TempData["Mensaje"];
-            return View(paginacion);
+            var modelo = new PaginacionModel<Inmueble>
+            {
+                Items = inmuebles,
+                PaginaActual = pagina,
+                ElementosPorPagina = tamanoPagina,
+                TotalElementos = totalElementos,
+                TotalPaginas = (int)Math.Ceiling((double)totalElementos / tamanoPagina)
+            };
+            
+            return View(modelo);
         }
 
-        // GET: Inmuebles/Disponibles
-        public async Task<IActionResult> Disponibles()
+        // GET: Inmuebles/Details/5
+        public IActionResult Details(int id)
         {
-            var lista = await _context.Inmuebles
-                .Where(i => i.Disponible)
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .ToListAsync();
-            return View(lista);
+            var inmueble = _repositorio.ObtenerPorId(id);
+            if (inmueble == null)
+            {
+                return NotFound();
+            }
+            return View(inmueble);
         }
 
         // GET: Inmuebles/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            await CargarPropietarios();
-            await CargarTiposInmueble();
+            CargarPropietarios();
+            CargarTiposInmueble();
             return View();
         }
 
         // POST: Inmuebles/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Inmueble entidad)
+        public IActionResult Create(Inmueble inmueble)
         {
-            try
+            if (ModelState.IsValid)
             {
-                if (ModelState.IsValid)
+                try
                 {
-                    if (entidad.PortadaFile != null)
-                    {
-                        string ruta = Path.Combine(env.WebRootPath, "img", entidad.PortadaFile.FileName);
-                        using (var stream = new FileStream(ruta, FileMode.Create))
-                        {
-                            entidad.PortadaFile.CopyTo(stream);
-                        }
-                        entidad.Portada = entidad.PortadaFile.FileName;
-                    }
-
-                    _context.Add(entidad);
-                    await _context.SaveChangesAsync();
+                    _repositorio.Alta(inmueble);
                     TempData["Success"] = "Inmueble creado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
-
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                TempData["Error"] = "Errores de validación: " + string.Join(", ", errors);
-                await CargarPropietarios();
-                await CargarTiposInmueble();
-                return View(entidad);
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al crear el inmueble: {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                ViewBag.StackTrace = ex.StackTrace;
-                await CargarPropietarios();
-                await CargarTiposInmueble();
-                return View(entidad);
-            }
+            CargarPropietarios();
+            CargarTiposInmueble();
+            return View(inmueble);
         }
 
         // GET: Inmuebles/Edit/5
-        public async Task<IActionResult> Edit(int id)
+        public IActionResult Edit(int id)
         {
-            var entidad = await _context.Inmuebles.FindAsync(id);
-            if (entidad == null)
+            var inmueble = _repositorio.ObtenerPorId(id);
+            if (inmueble == null)
+            {
                 return NotFound();
-
-            await CargarPropietarios();
-            await CargarTiposInmueble();
-            return View(entidad);
+            }
+            CargarPropietarios();
+            CargarTiposInmueble();
+            return View(inmueble);
         }
 
         // POST: Inmuebles/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Inmueble entidad)
+        public IActionResult Edit(int id, Inmueble inmueble)
         {
-            try
+            if (id != inmueble.Id)
             {
-                if (id != entidad.Id)
-                    return NotFound();
+                return NotFound();
+            }
 
-                if (ModelState.IsValid)
+            if (ModelState.IsValid)
+            {
+                try
                 {
-                    if (entidad.PortadaFile != null)
-                    {
-                        string ruta = Path.Combine(env.WebRootPath, "img", entidad.PortadaFile.FileName);
-                        using (var stream = new FileStream(ruta, FileMode.Create))
-                        {
-                            entidad.PortadaFile.CopyTo(stream);
-                        }
-                        entidad.Portada = entidad.PortadaFile.FileName;
-                    }
-
-                    _context.Update(entidad);
-                    await _context.SaveChangesAsync();
+                    _repositorio.Modificacion(inmueble);
                     TempData["Success"] = "Inmueble actualizado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
-
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                TempData["Error"] = "Errores de validación: " + string.Join(", ", errors);
-                await CargarPropietarios();
-                await CargarTiposInmueble();
-                return View(entidad);
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al actualizar el inmueble: {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                ViewBag.StackTrace = ex.StackTrace;
-                await CargarPropietarios();
-                await CargarTiposInmueble();
-                return View(entidad);
-            }
-        }
-
-        // GET: Inmuebles/Details/5
-        public async Task<IActionResult> Details(int id)
-        {
-            var entidad = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .FirstOrDefaultAsync(i => i.Id == id);
-            if (entidad == null)
-                return NotFound();
-
-            return View(entidad);
+            CargarPropietarios();
+            CargarTiposInmueble();
+            return View(inmueble);
         }
 
         // GET: Inmuebles/Delete/5
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult Delete(int id)
         {
-            var entidad = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .FirstOrDefaultAsync(i => i.Id == id);
-            if (entidad == null)
+            var inmueble = _repositorio.ObtenerPorId(id);
+            if (inmueble == null)
+            {
                 return NotFound();
-
-            ViewBag.Mensaje = TempData["Mensaje"];
-            ViewBag.Error = TempData["Error"];
-            return View(entidad);
+            }
+            return View(inmueble);
         }
 
         // POST: Inmuebles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(int id)
         {
             try
             {
-                var entidad = await _context.Inmuebles.FindAsync(id);
-                if (entidad != null)
-                {
-                    _context.Inmuebles.Remove(entidad);
-                    await _context.SaveChangesAsync();
-                    TempData["Success"] = "Inmueble eliminado exitosamente.";
-                }
-                return RedirectToAction(nameof(Index));
+                _repositorio.Baja(id);
+                TempData["Success"] = "Inmueble eliminado exitosamente.";
             }
             catch (Exception ex)
             {
-                ViewBag.Error = ex.Message;
-                ViewBag.StackTrace = ex.StackTrace;
-                var entidad = await _context.Inmuebles
-                    .Include(i => i.Propietario)
-                    .Include(i => i.TipoInmueble)
-                    .FirstOrDefaultAsync(i => i.Id == id);
-                return View(entidad);
+                TempData["Error"] = $"Error al eliminar el inmueble: {ex.Message}";
             }
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Inmuebles/PorPropietario
-        public async Task<IActionResult> PorPropietario(int? propietarioId)
+        // GET: Inmuebles/Disponibles
+        public IActionResult Disponibles()
         {
-            await CargarPropietarios();
-            
-            if (propietarioId.HasValue)
-            {
-                var inmueblesPorPropietario = await _context.Inmuebles
-                    .Include(i => i.Propietario)
-                    .Include(i => i.TipoInmueble)
-                    .Where(i => i.PropietarioId == propietarioId.Value)
-                    .OrderBy(i => i.Direccion)
-                    .ToListAsync();
-
-                ViewBag.Titulo = $"Inmuebles del Propietario: {inmueblesPorPropietario.FirstOrDefault()?.Propietario?.Nombre} {inmueblesPorPropietario.FirstOrDefault()?.Propietario?.Apellido}";
-                ViewBag.Total = inmueblesPorPropietario.Count;
-                ViewBag.PropietarioSeleccionado = propietarioId.Value;
-                return View("ReporteInmuebles", inmueblesPorPropietario);
-            }
-
-            ViewBag.Titulo = "Seleccionar Propietario";
-            return View("SeleccionarPropietario");
+            var inmuebles = _repositorio.ObtenerDisponibles();
+            return View(inmuebles);
         }
 
-        // GET: Inmuebles/Libres
-        public async Task<IActionResult> Libres()
+        private void CargarPropietarios()
         {
-            var inmueblesLibres = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .Where(i => i.Disponible && 
-                           !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
-                                                       c.FechaTerminacionAnticipada == null && 
-                                                       DateTime.Now >= c.FechaInicio && 
-                                                       DateTime.Now <= c.FechaFin))
-                .OrderBy(i => i.Direccion)
-                .ToListAsync();
-
-            ViewBag.Titulo = "Inmuebles Libres";
-            ViewBag.Total = inmueblesLibres.Count;
-            return View("ReporteInmuebles", inmueblesLibres);
+            var propietarios = _repositorioPropietario.ObtenerTodos();
+            ViewBag.Propietarios = propietarios;
         }
 
         // GET: Inmuebles/Ocupados
-        public async Task<IActionResult> Ocupados()
+        public IActionResult Ocupados()
         {
-            var inmueblesOcupados = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .Where(i => _context.Contratos.Any(c => c.InmuebleId == i.Id && 
-                                                       c.FechaTerminacionAnticipada == null && 
-                                                       DateTime.Now >= c.FechaInicio && 
-                                                       DateTime.Now <= c.FechaFin))
-                .OrderBy(i => i.Direccion)
-                .ToListAsync();
-
-            ViewBag.Titulo = "Inmuebles Ocupados";
-            ViewBag.Total = inmueblesOcupados.Count;
-            return View("ReporteInmuebles", inmueblesOcupados);
+            var inmuebles = _repositorio.ObtenerTodos().Where(i => !i.Disponible).ToList();
+            return View("Index", new PaginacionModel<Inmueble>
+            {
+                Items = inmuebles,
+                PaginaActual = 1,
+                ElementosPorPagina = 5,
+                TotalElementos = inmuebles.Count,
+                TotalPaginas = 1
+            });
         }
 
-        // GET: Inmuebles/VerFotos/5
-        public async Task<IActionResult> VerFotos(int id)
+        // GET: Inmuebles/Libres
+        public IActionResult Libres()
         {
-            var inmueble = await _context.Inmuebles
-                .Include(i => i.Propietario)
-                .Include(i => i.TipoInmueble)
-                .FirstOrDefaultAsync(i => i.Id == id);
-            
-            if (inmueble == null)
-                return NotFound();
-
-            return View(inmueble);
+            var inmuebles = _repositorio.ObtenerDisponibles();
+            return View("Index", new PaginacionModel<Inmueble>
+            {
+                Items = inmuebles,
+                PaginaActual = 1,
+                ElementosPorPagina = 5,
+                TotalElementos = inmuebles.Count,
+                TotalPaginas = 1
+            });
         }
 
-        // API: Buscar propietarios
-        [HttpGet]
-        public async Task<IActionResult> BuscarPropietarios(string term)
+        // GET: Inmuebles/PorPropietario
+        public IActionResult PorPropietario()
         {
-            if (string.IsNullOrEmpty(term))
-                return Json(new List<object>());
-
-            var propietarios = await _context.Propietarios
-                .Where(p => p.Nombre.Contains(term) || p.Apellido.Contains(term) || p.Email.Contains(term))
-                .Select(p => new { 
-                    id = p.Id, 
-                    text = $"{p.Nombre} {p.Apellido} ({p.Email})" 
-                })
-                .Take(10)
-                .ToListAsync();
-
-            return Json(propietarios);
+            CargarPropietarios();
+            return View();
         }
 
-        // API: Buscar tipos de inmueble
-        [HttpGet]
-        public async Task<IActionResult> BuscarTiposInmueble(string term)
+        // POST: Inmuebles/PorPropietario
+        [HttpPost]
+        public IActionResult PorPropietario(int propietarioId)
         {
-            if (string.IsNullOrEmpty(term))
-                return Json(new List<object>());
-
-            var tipos = await _context.TiposInmueble
-                .Where(t => t.Nombre.Contains(term))
-                .Select(t => new { 
-                    id = t.Id, 
-                    text = t.Nombre 
-                })
-                .Take(10)
-                .ToListAsync();
-
-            return Json(tipos);
+            var inmuebles = _repositorio.ObtenerPorPropietario(propietarioId);
+            CargarPropietarios();
+            ViewBag.PropietarioSeleccionado = propietarioId;
+            return View("Index", new PaginacionModel<Inmueble>
+            {
+                Items = inmuebles,
+                PaginaActual = 1,
+                ElementosPorPagina = 5,
+                TotalElementos = inmuebles.Count,
+                TotalPaginas = 1
+            });
         }
 
         // GET: Inmuebles/Estadisticas
-        public async Task<IActionResult> Estadisticas()
+        public IActionResult Estadisticas()
         {
+            var inmuebles = _repositorio.ObtenerTodos();
             var estadisticas = new
             {
-                TotalInmuebles = await _context.Inmuebles.CountAsync(),
-                InmueblesDisponibles = await _context.Inmuebles.CountAsync(i => i.Disponible),
-                InmueblesOcupados = await _context.Inmuebles.CountAsync(i => 
-                    _context.Contratos.Any(c => c.InmuebleId == i.Id && 
-                                              c.FechaTerminacionAnticipada == null && 
-                                              DateTime.Now >= c.FechaInicio && 
-                                              DateTime.Now <= c.FechaFin)),
-                InmueblesLibres = await _context.Inmuebles.CountAsync(i => 
-                    i.Disponible && 
-                    !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
-                                               c.FechaTerminacionAnticipada == null && 
-                                               DateTime.Now >= c.FechaInicio && 
-                                               DateTime.Now <= c.FechaFin)),
-                TotalPropietarios = await _context.Propietarios.CountAsync(),
-                IngresosPotenciales = await _context.Inmuebles
-                    .Where(i => i.Disponible && 
-                               !_context.Contratos.Any(c => c.InmuebleId == i.Id && 
-                                                           c.FechaTerminacionAnticipada == null && 
-                                                           DateTime.Now >= c.FechaInicio && 
-                                                           DateTime.Now <= c.FechaFin))
-                    .SumAsync(i => i.Precio)
+                Total = inmuebles.Count,
+                Disponibles = inmuebles.Count(i => i.Disponible),
+                Ocupados = inmuebles.Count(i => !i.Disponible),
+                ValorTotal = inmuebles.Sum(i => i.Precio),
+                ValorPromedio = inmuebles.Any() ? inmuebles.Average(i => i.Precio) : 0
             };
-
             return View(estadisticas);
         }
 
+        private void CargarTiposInmueble()
+        {
+            var tiposInmueble = _repositorioTipoInmueble.ObtenerTodos();
+            ViewBag.TiposInmueble = tiposInmueble;
+        }
     }
 }

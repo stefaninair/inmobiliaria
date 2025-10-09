@@ -1,8 +1,26 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";    //Nombre de la ventana en la que esta parado
+    ViewData["Title"] = "Inicio";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">🏢 Sistema Inmobiliaria</h1>
+    <p class="lead">Gestión completa de inmuebles, contratos y pagos</p>
+    
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="alert alert-success" role="alert">
+            <h4 class="alert-heading">¡Bienvenido, @User.Identity.Name!</h4>
+            <p>Has iniciado sesión correctamente en el sistema.</p>
+            <hr>
+            <p class="mb-0">Puedes acceder a todas las funcionalidades del sistema desde el menú de navegación.</p>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <h4 class="alert-heading">Inicia sesión</h4>
+            <p>Para acceder al sistema, por favor inicia sesión con tus credenciales.</p>
+            <a href="/Auth/Login" class="btn btn-primary">Iniciar Sesión</a>
+        </div>
+    }
 </div>

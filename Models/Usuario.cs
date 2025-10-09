@@ -34,6 +34,11 @@ namespace Inmobiliaria.Models
         [Display(Name = "Nombre")]
         public string Nombre { get; set; } = "";
 
+        [Required(ErrorMessage = "El apellido es requerido")]
+        [StringLength(50, ErrorMessage = "El apellido no puede exceder los 50 caracteres")]
+        [Display(Name = "Apellido")]
+        public string Apellido { get; set; } = "";
+
         [StringLength(200, ErrorMessage = "La ruta del avatar no puede exceder los 200 caracteres")]
         [Display(Name = "Avatar")]
         public string? AvatarPath { get; set; }

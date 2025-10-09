@@ -1,128 +1,220 @@
-using Microsoft.EntityFrameworkCore;
 using Inmobiliaria.Data;
 using Inmobiliaria.Models;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace Inmobiliaria.Services
 {
-    public class PagoService
+    public class PagoService : BaseRepository
     {
-        private readonly ApplicationDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PagoService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
+        public PagoService(DatabaseConnection dbConnection, IHttpContextAccessor httpContextAccessor) : base(dbConnection)
         {
-            _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<Pago> CrearPagoAsync(Pago pago)
+        public async Task<int> CrearPagoAsync(Pago pago)
         {
-            // Asignar datos de auditoría
-            pago.CreadoPorUserId = GetCurrentUserId();
-            pago.CreadoEn = DateTime.Now;
-            pago.Eliminado = false;
+            var query = @"
+                INSERT INTO Pagos (ContratoId, Monto, FechaPago, Periodo, Observaciones, CreadoPorUserId) 
+                VALUES (@contratoId, @monto, @fechaPago, @periodo, @observaciones, @creadoPorUserId)";
+            
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", pago.ContratoId },
+                { "@monto", pago.Monto },
+                { "@fechaPago", pago.FechaPago },
+                { "@periodo", pago.Periodo },
+                { "@observaciones", pago.Observaciones ?? (object)DBNull.Value },
+                { "@creadoPorUserId", GetCurrentUserId() }
+            };
 
-            _context.Pagos.Add(pago);
-            await _context.SaveChangesAsync();
-            return pago;
+            using var connection = _dbConnection.GetConnection();
+            connection.Open();
+            
+            using var command = CreateCommand(query, connection, parameters);
+            command.ExecuteNonQuery();
+            
+            return GetLastInsertId(connection);
         }
 
-        public async Task<bool> AnularPagoAsync(int pagoId, string motivoAnulacion)
+        public async Task<bool> AnularPagoAsync(int pagoId, string motivo)
         {
-            var pago = await _context.Pagos.FindAsync(pagoId);
-            if (pago == null || pago.Anulado || pago.Eliminado)
-                return false;
+            var query = @"
+                UPDATE Pagos 
+                SET AnuladoPorUserId = @anuladoPorUserId, AnuladoEn = @anuladoEn, MotivoAnulacion = @motivo 
+                WHERE Id = @pagoId AND AnuladoEn IS NULL";
+            
+            var parameters = new Dictionary<string, object>
+            {
+                { "@pagoId", pagoId },
+                { "@anuladoPorUserId", GetCurrentUserId() },
+                { "@anuladoEn", DateTime.Now },
+                { "@motivo", motivo }
+            };
 
-            pago.AnuladoPorUserId = GetCurrentUserId();
-            pago.AnuladoEn = DateTime.Now;
-            pago.MotivoAnulacion = motivoAnulacion;
-
-            await _context.SaveChangesAsync();
-            return true;
+            var rowsAffected = ExecuteNonQuery(query, parameters);
+            return rowsAffected > 0;
         }
 
         public async Task<bool> EliminarPagoAsync(int pagoId)
         {
-            var pago = await _context.Pagos.FindAsync(pagoId);
-            if (pago == null || pago.Eliminado)
-                return false;
+            var query = @"
+                UPDATE Pagos 
+                SET Eliminado = 1, EliminadoPorUserId = @eliminadoPorUserId, EliminadoEn = @eliminadoEn 
+                WHERE Id = @pagoId AND Eliminado = 0";
+            
+            var parameters = new Dictionary<string, object>
+            {
+                { "@pagoId", pagoId },
+                { "@eliminadoPorUserId", GetCurrentUserId() },
+                { "@eliminadoEn", DateTime.Now }
+            };
 
-            pago.Eliminado = true;
-            pago.EliminadoPorUserId = GetCurrentUserId();
-            pago.EliminadoEn = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-            return true;
+            var rowsAffected = ExecuteNonQuery(query, parameters);
+            return rowsAffected > 0;
         }
 
         public async Task<bool> RestaurarPagoAsync(int pagoId)
         {
-            var pago = await _context.Pagos.FindAsync(pagoId);
-            if (pago == null || !pago.Eliminado)
-                return false;
+            var query = @"
+                UPDATE Pagos 
+                SET Eliminado = 0, EliminadoPorUserId = NULL, EliminadoEn = NULL 
+                WHERE Id = @pagoId AND Eliminado = 1";
+            
+            var parameters = new Dictionary<string, object>
+            {
+                { "@pagoId", pagoId }
+            };
 
-            pago.Eliminado = false;
-            pago.EliminadoPorUserId = null;
-            pago.EliminadoEn = null;
-
-            await _context.SaveChangesAsync();
-            return true;
+            var rowsAffected = ExecuteNonQuery(query, parameters);
+            return rowsAffected > 0;
         }
 
         public async Task<List<Pago>> ObtenerPagosActivosAsync()
         {
-            return await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .Include(p => p.CreadoPorUser)
-                .Include(p => p.AnuladoPorUser)
-                .Where(p => !p.Eliminado)
-                .OrderByDescending(p => p.FechaPago)
-                .ToListAsync();
+            var pagos = new List<Pago>();
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
+                       c.MontoMensual, c.FechaInicio, c.FechaFin
+                FROM Pagos p
+                LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                WHERE p.Eliminado = 0 AND p.AnuladoEn IS NULL
+                ORDER BY p.FechaPago DESC";
+
+            using var reader = ExecuteReader(query);
+            while (reader.Read())
+            {
+                pagos.Add(MapFromReader(reader));
+            }
+
+            return pagos;
         }
 
         public async Task<List<Pago>> ObtenerPagosEliminadosAsync()
         {
-            return await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .Include(p => p.CreadoPorUser)
-                .Include(p => p.EliminadoPorUser)
-                .Where(p => p.Eliminado)
-                .OrderByDescending(p => p.EliminadoEn)
-                .ToListAsync();
+            var pagos = new List<Pago>();
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
+                       c.MontoMensual, c.FechaInicio, c.FechaFin
+                FROM Pagos p
+                LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                WHERE p.Eliminado = 1
+                ORDER BY p.EliminadoEn DESC";
+
+            using var reader = ExecuteReader(query);
+            while (reader.Read())
+            {
+                pagos.Add(MapFromReader(reader));
+            }
+
+            return pagos;
         }
 
         public async Task<List<Pago>> ObtenerPagosPorContratoAsync(int contratoId)
         {
-            return await _context.Pagos
-                .Include(p => p.Contrato)
-                .Include(p => p.CreadoPorUser)
-                .Include(p => p.AnuladoPorUser)
-                .Where(p => p.ContratoId == contratoId && !p.Eliminado)
-                .OrderByDescending(p => p.FechaPago)
-                .ToListAsync();
+            var pagos = new List<Pago>();
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
+                       c.MontoMensual, c.FechaInicio, c.FechaFin
+                FROM Pagos p
+                LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                WHERE p.ContratoId = @contratoId AND p.Eliminado = 0
+                ORDER BY p.FechaPago DESC";
+            var parameters = new Dictionary<string, object> { { "@contratoId", contratoId } };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                pagos.Add(MapFromReader(reader));
+            }
+
+            return pagos;
         }
 
         public async Task<decimal> CalcularTotalPagosAsync(int contratoId)
         {
-            return await _context.Pagos
-                .Where(p => p.ContratoId == contratoId && !p.Eliminado && !p.Anulado)
-                .SumAsync(p => p.Monto);
+            var query = @"
+                SELECT COALESCE(SUM(Monto), 0) 
+                FROM Pagos 
+                WHERE ContratoId = @contratoId AND Eliminado = 0 AND AnuladoEn IS NULL";
+            var parameters = new Dictionary<string, object> { { "@contratoId", contratoId } };
+
+            var result = ExecuteScalar(query, parameters);
+            return Convert.ToDecimal(result);
         }
 
         public async Task<bool> ExistePagoParaPeriodoAsync(int contratoId, string periodo)
         {
-            return await _context.Pagos
-                .AnyAsync(p => p.ContratoId == contratoId && 
-                              p.Periodo == periodo && 
-                              !p.Eliminado && 
-                              !p.Anulado);
+            var query = @"
+                SELECT COUNT(*) 
+                FROM Pagos 
+                WHERE ContratoId = @contratoId AND Periodo = @periodo AND Eliminado = 0 AND AnuladoEn IS NULL";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", contratoId },
+                { "@periodo", periodo }
+            };
+
+            var count = ExecuteScalar(query, parameters);
+            return Convert.ToInt32(count) > 0;
+        }
+
+        private Pago MapFromReader(IDataReader reader)
+        {
+            return new Pago
+            {
+                Id = reader.GetInt32("Id"),
+                ContratoId = reader.GetInt32("ContratoId"),
+                Monto = reader.GetDecimal("Monto"),
+                FechaPago = reader.GetDateTime("FechaPago"),
+                Periodo = reader.GetString("Periodo"),
+                Observaciones = reader.IsDBNull("Observaciones") ? null : reader.GetString("Observaciones"),
+                CreadoPorUserId = reader.GetInt32("CreadoPorUserId"),
+                CreadoEn = reader.GetDateTime("CreadoEn"),
+                AnuladoPorUserId = reader.IsDBNull("AnuladoPorUserId") ? null : reader.GetInt32("AnuladoPorUserId"),
+                AnuladoEn = reader.IsDBNull("AnuladoEn") ? null : reader.GetDateTime("AnuladoEn"),
+                MotivoAnulacion = reader.IsDBNull("MotivoAnulacion") ? null : reader.GetString("MotivoAnulacion"),
+                Eliminado = reader.IsDBNull("Eliminado") ? false : reader.GetBoolean("Eliminado"),
+                EliminadoPorUserId = reader.IsDBNull("EliminadoPorUserId") ? null : reader.GetInt32("EliminadoPorUserId"),
+                EliminadoEn = reader.IsDBNull("EliminadoEn") ? null : reader.GetDateTime("EliminadoEn"),
+                Contrato = reader.IsDBNull("ContratoId") ? null : new Contrato
+                {
+                    Id = reader.GetInt32("ContratoId"),
+                    MontoMensual = reader.IsDBNull("MontoMensual") ? 0 : reader.GetDecimal("MontoMensual"),
+                    FechaInicio = reader.IsDBNull("FechaInicio") ? DateTime.MinValue : reader.GetDateTime("FechaInicio"),
+                    FechaFin = reader.IsDBNull("FechaFin") ? DateTime.MinValue : reader.GetDateTime("FechaFin")
+                }
+            };
         }
 
         private int GetCurrentUserId()

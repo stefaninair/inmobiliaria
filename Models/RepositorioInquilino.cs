@@ -1,68 +1,127 @@
-using Microsoft.EntityFrameworkCore;
 using Inmobiliaria.Data;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
 using System.Data;
-using System.Linq;
-using System;
+using System.Threading.Tasks;
 
 namespace Inmobiliaria.Models
 {
-    public class RepositorioInquilino
+    public class RepositorioInquilino : BaseRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public RepositorioInquilino(ApplicationDbContext context)
+        public RepositorioInquilino(DatabaseConnection dbConnection) : base(dbConnection)
         {
-            _context = context;
         }
 
         public List<Inquilino> ObtenerTodos()
         {
-            return _context.Inquilinos.ToList();
+            var inquilinos = new List<Inquilino>();
+            var query = "SELECT Id, Nombre, Apellido, Dni, Telefono, Email FROM Inquilinos ORDER BY Id";
+
+            using var reader = ExecuteReader(query);
+            while (reader.Read())
+            {
+                inquilinos.Add(MapFromReader(reader));
+            }
+
+            return inquilinos;
         }
 
         public Inquilino? ObtenerPorId(int id)
         {
-            return _context.Inquilinos.Find(id);
+            var query = "SELECT Id, Nombre, Apellido, Dni, Telefono, Email FROM Inquilinos WHERE Id = @id";
+            var parameters = new Dictionary<string, object> { { "@id", id } };
+
+            using var reader = ExecuteReader(query, parameters);
+            if (reader.Read())
+            {
+                return MapFromReader(reader);
+            }
+
+            return null;
         }
 
         public int Alta(Inquilino i)
         {
-            _context.Inquilinos.Add(i);
-            _context.SaveChanges();
-            return i.Id;
+            var query = "INSERT INTO Inquilinos (Nombre, Apellido, Dni, Telefono, Email) VALUES (@nombre, @apellido, @dni, @telefono, @email)";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@nombre", i.Nombre },
+                { "@apellido", i.Apellido },
+                { "@dni", i.Dni },
+                { "@telefono", i.Telefono ?? (object)DBNull.Value },
+                { "@email", i.Email ?? (object)DBNull.Value }
+            };
+
+            using var connection = _dbConnection.GetConnection();
+            connection.Open();
+            
+            using var command = CreateCommand(query, connection, parameters);
+            command.ExecuteNonQuery();
+            
+            return GetLastInsertId(connection);
         }
 
         public int Modificacion(Inquilino i)
         {
-            _context.Inquilinos.Update(i);
-            return _context.SaveChanges();
+            var query = "UPDATE Inquilinos SET Nombre = @nombre, Apellido = @apellido, Dni = @dni, Telefono = @telefono, Email = @email WHERE Id = @id";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@id", i.Id },
+                { "@nombre", i.Nombre },
+                { "@apellido", i.Apellido },
+                { "@dni", i.Dni },
+                { "@telefono", i.Telefono ?? (object)DBNull.Value },
+                { "@email", i.Email ?? (object)DBNull.Value }
+            };
+
+            return ExecuteNonQuery(query, parameters);
         }
 
         public int Baja(int id)
         {
-            var i = _context.Inquilinos.Find(id);
-            if (i != null)
-            {
-                _context.Inquilinos.Remove(i);
-                return _context.SaveChanges();
-            }
-            return 0;
+            var query = "DELETE FROM Inquilinos WHERE Id = @id";
+            var parameters = new Dictionary<string, object> { { "@id", id } };
+
+            return ExecuteNonQuery(query, parameters);
         }
 
-        public PaginacionModel<Inquilino> ObtenerPaginados(int pagina = 1, int elementosPorPagina = 5)
+        public List<Inquilino> ObtenerPaginados(int pagina, int tamanoPagina)
         {
-            var totalElementos = _context.Inquilinos.Count();
-            var offset = (pagina - 1) * elementosPorPagina;
-            
-            var res = _context.Inquilinos
-                .OrderBy(i => i.Id)
-                .Skip(offset)
-                .Take(elementosPorPagina)
-                .ToList();
-            
-            return new PaginacionModel<Inquilino>(res, pagina, elementosPorPagina, totalElementos);
+            var inquilinos = new List<Inquilino>();
+            var offset = (pagina - 1) * tamanoPagina;
+            var query = "SELECT Id, Nombre, Apellido, Dni, Telefono, Email FROM Inquilinos ORDER BY Id LIMIT @offset, @tamano";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@offset", offset },
+                { "@tamano", tamanoPagina }
+            };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                inquilinos.Add(MapFromReader(reader));
+            }
+
+            return inquilinos;
+        }
+
+        public int Contar()
+        {
+            var query = "SELECT COUNT(*) FROM Inquilinos";
+            var result = ExecuteScalar(query);
+            return Convert.ToInt32(result);
+        }
+
+        private Inquilino MapFromReader(IDataReader reader)
+        {
+            return new Inquilino
+            {
+                Id = reader.GetInt32("Id"),
+                Nombre = reader.GetString("Nombre"),
+                Apellido = reader.GetString("Apellido"),
+                Dni = reader.GetString("Dni"),
+                Telefono = reader.IsDBNull("Telefono") ? null : reader.GetString("Telefono"),
+                Email = reader.IsDBNull("Email") ? null : reader.GetString("Email")
+            };
         }
     }
 }

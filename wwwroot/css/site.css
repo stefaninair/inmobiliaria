@@ -349,3 +349,99 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Mejoras en el perfil de usuario */
+.profile-card .table {
+    table-layout: fixed;
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.profile-card .table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: top;
+    border: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.profile-card .table td:first-child {
+    font-weight: 600;
+    color: #495057;
+    width: 20%;
+    min-width: 70px;
+    padding-right: 0.5rem;
+}
+
+.profile-card .table td:last-child {
+    width: 80%;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    max-width: 0;
+}
+
+/* Asegurar que el contenido no se desborde */
+.profile-card .card-body {
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.profile-card .table tr {
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.profile-card .table tr:last-child {
+    border-bottom: none;
+}
+
+/* Estilos específicos para el perfil */
+.profile-card .card {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.profile-card .table-responsive {
+    overflow-x: hidden;
+}
+
+/* Mejoras en la paginación */
+.pagination {
+    margin-top: 1rem;
+}
+
+.pagination .page-link {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.125rem;
+    border-radius: 0.375rem;
+}
+
+/* Mejoras en las tablas con paginación */
+.table-responsive {
+    margin-bottom: 1rem;
+}
+
+/* Mejoras en los formularios de validación */
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.form-control.is-valid {
+    border-color: #28a745;
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #dc3545;
+}
+
+.valid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #28a745;
+}

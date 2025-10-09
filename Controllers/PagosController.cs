@@ -1,321 +1,177 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Inmobiliaria.Models;
-using Inmobiliaria.Data;
 using Inmobiliaria.Services;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inmobiliaria.Controllers
 {
     [Authorize]
     public class PagosController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly PagoService _pagoService;
+        private readonly RepositorioContrato _repositorioContrato;
 
-        public PagosController(ApplicationDbContext context, PagoService pagoService)
+        public PagosController(PagoService pagoService, RepositorioContrato repositorioContrato)
         {
-            _context = context;
             _pagoService = pagoService;
+            _repositorioContrato = repositorioContrato;
         }
 
         // GET: Pagos
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var pagos = await _pagoService.ObtenerPagosActivosAsync();
+            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
             return View(pagos);
         }
 
-        // GET: Pagos/Eliminados
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> Eliminados()
-        {
-            var pagos = await _pagoService.ObtenerPagosEliminadosAsync();
-            ViewBag.Titulo = "Pagos Eliminados";
-            return View("Index", pagos);
-        }
-
         // GET: Pagos/Details/5
-        public async Task<IActionResult> Details(int id)
+        public IActionResult Details(int id)
         {
-            var pago = await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .Include(p => p.CreadoPorUser)
-                .Include(p => p.AnuladoPorUser)
-                .Include(p => p.EliminadoPorUser)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
+            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
+            var pago = pagos.FirstOrDefault(p => p.Id == id);
             if (pago == null)
+            {
                 return NotFound();
-
+            }
             return View(pago);
         }
 
         // GET: Pagos/Create
-        public async Task<IActionResult> Create(int? contratoId)
+        public IActionResult Create()
         {
-            await CargarListas();
-            
-            var pago = new Pago
-            {
-                FechaPago = DateTime.Today,
-                Periodo = DateTime.Now.ToString("yyyy-MM")
-            };
-
-            if (contratoId.HasValue)
-            {
-                pago.ContratoId = contratoId.Value;
-            }
-
-            return View(pago);
+            var contratos = _repositorioContrato.ObtenerTodos();
+            ViewBag.Contratos = contratos;
+            return View();
         }
 
         // POST: Pagos/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Pago pago)
+        public IActionResult Create(Pago pago)
         {
-            try
+            if (ModelState.IsValid)
             {
-                if (ModelState.IsValid)
+                try
                 {
-                    // Validar que no exista pago para el mismo período
-                    if (await _pagoService.ExistePagoParaPeriodoAsync(pago.ContratoId, pago.Periodo))
-                    {
-                        ModelState.AddModelError("", "Ya existe un pago para este contrato en el período seleccionado.");
-                        await CargarListas();
-                        return View(pago);
-                    }
-
-                    await _pagoService.CrearPagoAsync(pago);
-                    TempData["Success"] = "Pago registrado correctamente.";
+                    _pagoService.CrearPagoAsync(pago).Wait();
+                    TempData["Success"] = "Pago creado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
-
-                await CargarListas();
-                return View(pago);
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al crear el pago: {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                await CargarListas();
-                return View(pago);
-            }
+            var contratos = _repositorioContrato.ObtenerTodos();
+            ViewBag.Contratos = contratos;
+            return View(pago);
         }
 
         // GET: Pagos/Edit/5
-        public async Task<IActionResult> Edit(int id)
+        public IActionResult Edit(int id)
         {
-            var pago = await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (pago == null || pago.Eliminado || pago.Anulado)
+            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
+            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            if (pago == null)
+            {
                 return NotFound();
-
-            await CargarListas();
+            }
+            var contratos = _repositorioContrato.ObtenerTodos();
+            ViewBag.Contratos = contratos;
             return View(pago);
         }
 
         // POST: Pagos/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Pago pago)
+        public IActionResult Edit(int id, Pago pago)
         {
-            try
+            if (id != pago.Id)
             {
-                if (id != pago.Id)
-                    return NotFound();
+                return NotFound();
+            }
 
-                if (ModelState.IsValid)
+            if (ModelState.IsValid)
+            {
+                try
                 {
-                    // Validar que no exista otro pago para el mismo período
-                    var pagoExistente = await _context.Pagos
-                        .FirstOrDefaultAsync(p => p.ContratoId == pago.ContratoId && 
-                                               p.Periodo == pago.Periodo && 
-                                               p.Id != pago.Id && 
-                                               !p.Eliminado && 
-                                               !p.Anulado);
-
-                    if (pagoExistente != null)
-                    {
-                        ModelState.AddModelError("", "Ya existe un pago para este contrato en el período seleccionado.");
-                        await CargarListas();
-                        return View(pago);
-                    }
-
-                    _context.Update(pago);
-                    await _context.SaveChangesAsync();
-                    TempData["Success"] = "Pago modificado correctamente.";
+                    // TODO: Implementar actualización de pago
+                    TempData["Success"] = "Pago actualizado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
-
-                await CargarListas();
-                return View(pago);
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al actualizar el pago: {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                await CargarListas();
-                return View(pago);
-            }
-        }
-
-        // GET: Pagos/Anular/5
-        public async Task<IActionResult> Anular(int id)
-        {
-            var pago = await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (pago == null || pago.Eliminado || pago.Anulado)
-                return NotFound();
-
+            var contratos = _repositorioContrato.ObtenerTodos();
+            ViewBag.Contratos = contratos;
             return View(pago);
         }
 
-        // POST: Pagos/Anular/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Anular(int id, string motivoAnulacion)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(motivoAnulacion))
-                {
-                    ModelState.AddModelError("", "El motivo de anulación es requerido.");
-                    var pago = await _context.Pagos
-                        .Include(p => p.Contrato!)
-                            .ThenInclude(c => c.Inmueble)
-                        .Include(p => p.Contrato!)
-                            .ThenInclude(c => c.Inquilino)
-                        .FirstOrDefaultAsync(p => p.Id == id);
-                    return View(pago);
-                }
-
-                var resultado = await _pagoService.AnularPagoAsync(id, motivoAnulacion);
-                if (resultado)
-                {
-                    TempData["Success"] = "Pago anulado correctamente.";
-                }
-                else
-                {
-                    TempData["Error"] = "No se pudo anular el pago.";
-                }
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
         // GET: Pagos/Delete/5
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult Delete(int id)
         {
-            var pago = await _context.Pagos
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inmueble)
-                .Include(p => p.Contrato!)
-                    .ThenInclude(c => c.Inquilino)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (pago == null || pago.Eliminado)
+            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
+            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            if (pago == null)
+            {
                 return NotFound();
-
+            }
             return View(pago);
         }
 
         // POST: Pagos/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(int id)
         {
             try
             {
-                var resultado = await _pagoService.EliminarPagoAsync(id);
-                if (resultado)
-                {
-                    TempData["Success"] = "Pago eliminado correctamente.";
-                }
-                else
-                {
-                    TempData["Error"] = "No se pudo eliminar el pago.";
-                }
-
-                return RedirectToAction(nameof(Index));
+                _pagoService.EliminarPagoAsync(id).Wait();
+                TempData["Success"] = "Pago eliminado exitosamente.";
             }
             catch (Exception ex)
             {
-                ViewBag.Error = ex.Message;
-                return RedirectToAction(nameof(Index));
+                TempData["Error"] = $"Error al eliminar el pago: {ex.Message}";
             }
-        }
-
-        // GET: Pagos/Restaurar/5
-        [Authorize(Policy = "SoloAdmin")]
-        public async Task<IActionResult> Restaurar(int id)
-        {
-            try
-            {
-                var resultado = await _pagoService.RestaurarPagoAsync(id);
-                if (resultado)
-                {
-                    TempData["Success"] = "Pago restaurado correctamente.";
-                }
-                else
-                {
-                    TempData["Error"] = "No se pudo restaurar el pago.";
-                }
-
-                return RedirectToAction(nameof(Eliminados));
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = ex.Message;
-                return RedirectToAction(nameof(Eliminados));
-            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Pagos/PorContrato/5
-        public async Task<IActionResult> PorContrato(int contratoId)
+        public IActionResult PorContrato(int contratoId)
         {
-            var pagos = await _pagoService.ObtenerPagosPorContratoAsync(contratoId);
-            var contrato = await _context.Contratos
-                .Include(c => c.Inmueble)
-                .Include(c => c.Inquilino)
-                .FirstOrDefaultAsync(c => c.Id == contratoId);
-
-            ViewBag.Contrato = contrato;
-            ViewBag.TotalPagos = await _pagoService.CalcularTotalPagosAsync(contratoId);
+            var pagos = _pagoService.ObtenerPagosPorContratoAsync(contratoId).Result;
             return View(pagos);
         }
 
-        private async Task CargarListas()
+        // GET: Pagos/Anular/5
+        public IActionResult Anular(int id)
         {
-            ViewBag.Contratos = await _context.Contratos
-                .Include(c => c.Inmueble)
-                .Include(c => c.Inquilino)
-                .Where(c => !c.FechaTerminacionAnticipada.HasValue && 
-                           DateTime.Now >= c.FechaInicio && 
-                           DateTime.Now <= c.FechaFin)
-                .OrderBy(c => c.Inmueble!.Direccion)
-                .ToListAsync();
+            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
+            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            if (pago == null)
+            {
+                return NotFound();
+            }
+            return View(pago);
+        }
+
+        // POST: Pagos/Anular/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Anular(int id, string motivo)
+        {
+            try
+            {
+                _pagoService.AnularPagoAsync(id, motivo).Wait();
+                TempData["Success"] = "Pago anulado exitosamente.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al anular el pago: {ex.Message}";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }
-

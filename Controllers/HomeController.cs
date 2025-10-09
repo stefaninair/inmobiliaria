@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using inmobiliaria.Models;
+using Inmobiliaria.Models;
 
-namespace inmobiliaria.Controllers;
+namespace Inmobiliaria.Controllers;
 
 [AllowAnonymous]
 public class HomeController : Controller

@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Contratos por Inmueble";
+}
+
+<h1>Contratos por Inmueble</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form asp-action="PorInmueble" method="post">
+            <div class="form-group">
+                <label for="inmuebleId" class="form-label">Seleccionar Inmueble:</label>
+                <select name="inmuebleId" id="inmuebleId" class="form-control" required>
+                    <option value="">-- Seleccionar Inmueble --</option>
+                    @if (ViewBag.Inmuebles != null)
+                    {
+                        @foreach (var inmueble in ViewBag.Inmuebles)
+                        {
+                            <option value="@inmueble.Id" selected="@(ViewBag.InmuebleSeleccionado == inmueble.Id)">
+                                @inmueble.Direccion - @inmueble.Precio.ToString("C")
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-search"></i> Buscar
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (ViewBag.InmuebleSeleccionado != null)
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-info-circle"></i> Mostrando contratos del inmueble seleccionado.
+    </div>
+}

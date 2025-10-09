@@ -1,26 +1,46 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Inmobiliaria.Models;
-using System;
-using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Inmobiliaria.Controllers
 {
     [Authorize]
     public class PropietariosController : Controller
     {
-        private readonly RepositorioPropietario repositorio;
+        private readonly RepositorioPropietario _repositorio;
 
-        public PropietariosController(RepositorioPropietario repo)
+        public PropietariosController(RepositorioPropietario repositorio)
         {
-            this.repositorio = repo;
+            _repositorio = repositorio;
         }
 
         // GET: Propietarios
-        public IActionResult Index(int pagina = 1, int elementosPorPagina = 5)
+        public IActionResult Index(int pagina = 1, int tamanoPagina = 5)
         {
-            var paginacion = repositorio.ObtenerPaginados(pagina, elementosPorPagina);
-            return View(paginacion);
+            var totalElementos = _repositorio.Contar();
+            var propietarios = _repositorio.ObtenerPaginados(pagina, tamanoPagina);
+            
+            var modelo = new PaginacionModel<Propietario>
+            {
+                Items = propietarios,
+                PaginaActual = pagina,
+                ElementosPorPagina = tamanoPagina,
+                TotalElementos = totalElementos,
+                TotalPaginas = (int)Math.Ceiling((double)totalElementos / tamanoPagina)
+            };
+            
+            return View(modelo);
+        }
+
+        // GET: Propietarios/Details/5
+        public IActionResult Details(int id)
+        {
+            var propietario = _repositorio.ObtenerPorId(id);
+            if (propietario == null)
+            {
+                return NotFound();
+            }
+            return View(propietario);
         }
 
         // GET: Propietarios/Create
@@ -32,76 +52,86 @@ namespace Inmobiliaria.Controllers
         // POST: Propietarios/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Propietario p)
+        public IActionResult Create(Propietario propietario)
         {
             if (ModelState.IsValid)
             {
-                repositorio.Alta(p);
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _repositorio.Alta(propietario);
+                    TempData["Success"] = "Propietario creado exitosamente.";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al crear el propietario: {ex.Message}";
+                }
             }
-            return View(p);
+            return View(propietario);
         }
 
         // GET: Propietarios/Edit/5
         public IActionResult Edit(int id)
         {
-            var p = repositorio.ObtenerPorId(id);
-            if (p == null)
+            var propietario = _repositorio.ObtenerPorId(id);
+            if (propietario == null)
             {
                 return NotFound();
             }
-            return View(p);
+            return View(propietario);
         }
 
         // POST: Propietarios/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Propietario p)
+        public IActionResult Edit(int id, Propietario propietario)
         {
-            if (id != p.Id)
+            if (id != propietario.Id)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
-                repositorio.Modificacion(p);
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _repositorio.Modificacion(propietario);
+                    TempData["Success"] = "Propietario actualizado exitosamente.";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = $"Error al actualizar el propietario: {ex.Message}";
+                }
             }
-            return View(p);
-        }
-
-        // GET: Propietarios/Details/5
-        public IActionResult Details(int id)
-        {
-            var p = repositorio.ObtenerPorId(id);
-            if (p == null)
-            {
-                return NotFound();
-            }
-            return View(p);
+            return View(propietario);
         }
 
         // GET: Propietarios/Delete/5
-        [Authorize(Policy = "SoloAdmin")]
         public IActionResult Delete(int id)
         {
-            var p = repositorio.ObtenerPorId(id);
-            if (p == null)
+            var propietario = _repositorio.ObtenerPorId(id);
+            if (propietario == null)
             {
                 return NotFound();
             }
-            return View(p);
+            return View(propietario);
         }
 
         // POST: Propietarios/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = "SoloAdmin")]
         public IActionResult DeleteConfirmed(int id)
         {
-            repositorio.Baja(id);
-            TempData["Success"] = "Propietario eliminado exitosamente.";
+            try
+            {
+                _repositorio.Baja(id);
+                TempData["Success"] = "Propietario eliminado exitosamente.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al eliminar el propietario: {ex.Message}";
+            }
             return RedirectToAction(nameof(Index));
         }
     }

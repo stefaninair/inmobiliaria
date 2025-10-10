@@ -406,10 +406,20 @@ namespace Inmobiliaria.Data
                     PropietarioId INTEGER NOT NULL,
                     TipoInmuebleId INTEGER NOT NULL,
                     Observaciones TEXT,
+                    Portada TEXT,
                     CreadoEn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     ActualizadoEn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (PropietarioId) REFERENCES Propietarios(Id) ON DELETE CASCADE,
                     FOREIGN KEY (TipoInmuebleId) REFERENCES TiposInmueble(Id) ON DELETE CASCADE
+                );
+
+                -- Tabla de Imagenes
+                CREATE TABLE IF NOT EXISTS Imagenes (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    InmuebleId INTEGER NOT NULL,
+                    Url TEXT NOT NULL,
+                    CreadoEn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (InmuebleId) REFERENCES Inmuebles(Id) ON DELETE CASCADE
                 );
 
                 -- Tabla de Contratos
@@ -420,6 +430,9 @@ namespace Inmobiliaria.Data
                     MontoMensual REAL NOT NULL,
                     FechaInicio DATE NOT NULL,
                     FechaFin DATE NOT NULL,
+                    FechaTerminacionAnticipada DATE NULL,
+                    Multa REAL NULL,
+                    MotivoTerminacion TEXT NULL,
                     CreadoPorUserId INTEGER NOT NULL,
                     CreadoEn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     ActualizadoEn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -450,6 +463,10 @@ namespace Inmobiliaria.Data
                     FOREIGN KEY (EliminadoPorUserId) REFERENCES Usuarios(Id) ON DELETE SET NULL
                 );
 
+                -- Migración: Agregar columnas faltantes a la tabla Contratos
+                -- Nota: SQLite no soporta ALTER TABLE condicional, por lo que usamos try-catch
+                -- Las columnas se agregarán en el código C# usando try-catch
+
                 -- Crear índices para mejorar el rendimiento
                 CREATE INDEX IF NOT EXISTS idx_propietarios_dni ON Propietarios(Dni);
                 CREATE INDEX IF NOT EXISTS idx_inquilinos_dni ON Inquilinos(Dni);
@@ -472,6 +489,52 @@ namespace Inmobiliaria.Data
                     cmd.CommandText = command.Trim();
                     cmd.ExecuteNonQuery();
                 }
+            }
+
+            // Migración: Agregar columnas faltantes a la tabla Contratos
+            try
+            {
+                using var alterCmd1 = connection.CreateCommand();
+                alterCmd1.CommandText = "ALTER TABLE Contratos ADD COLUMN FechaTerminacionAnticipada DATE NULL";
+                alterCmd1.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                // La columna ya existe, continuar
+            }
+
+            try
+            {
+                using var alterCmd2 = connection.CreateCommand();
+                alterCmd2.CommandText = "ALTER TABLE Contratos ADD COLUMN Multa REAL NULL";
+                alterCmd2.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                // La columna ya existe, continuar
+            }
+
+            try
+            {
+                using var alterCmd3 = connection.CreateCommand();
+                alterCmd3.CommandText = "ALTER TABLE Contratos ADD COLUMN MotivoTerminacion TEXT NULL";
+                alterCmd3.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                // La columna ya existe, continuar
+            }
+
+            // Migración: Agregar columna Portada a la tabla Inmuebles
+            try
+            {
+                using var alterCmd4 = connection.CreateCommand();
+                alterCmd4.CommandText = "ALTER TABLE Inmuebles ADD COLUMN Portada TEXT NULL";
+                alterCmd4.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                // La columna ya existe, continuar
             }
             Console.WriteLine("Tablas creadas exitosamente.");
             }

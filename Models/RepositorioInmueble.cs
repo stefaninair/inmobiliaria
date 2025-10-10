@@ -16,7 +16,7 @@ namespace Inmobiliaria.Models
             var inmuebles = new List<Inmueble>();
             var query = @"
                 SELECT i.Id, i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible, 
-                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones,
+                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones, i.Portada,
                        p.Nombre, p.Apellido, p.Dni, p.Telefono, p.Email,
                        t.Nombre as TipoNombre
                 FROM Inmuebles i
@@ -37,7 +37,7 @@ namespace Inmobiliaria.Models
         {
             var query = @"
                 SELECT i.Id, i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible, 
-                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones,
+                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones, i.Portada,
                        p.Nombre, p.Apellido, p.Dni, p.Telefono, p.Email,
                        t.Nombre as TipoNombre
                 FROM Inmuebles i
@@ -160,7 +160,7 @@ namespace Inmobiliaria.Models
             var inmuebles = new List<Inmueble>();
             var query = @"
                 SELECT i.Id, i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible, 
-                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones,
+                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones, i.Portada,
                        p.Nombre, p.Apellido, p.Dni, p.Telefono, p.Email,
                        t.Nombre as TipoNombre
                 FROM Inmuebles i
@@ -185,7 +185,7 @@ namespace Inmobiliaria.Models
             var offset = (pagina - 1) * tamanoPagina;
             var query = @"
                 SELECT i.Id, i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible, 
-                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones,
+                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones, i.Portada,
                        p.Nombre, p.Apellido, p.Dni, p.Telefono, p.Email,
                        t.Nombre as TipoNombre
                 FROM Inmuebles i
@@ -228,7 +228,8 @@ namespace Inmobiliaria.Models
                 PropietarioId = reader.GetInt32("PropietarioId"),
                 TipoInmuebleId = reader.GetInt32("TipoInmuebleId"),
                 Observaciones = reader.IsDBNull("Observaciones") ? null : reader.GetString("Observaciones"),
-                Propietario = new Propietario
+                Portada = reader.IsDBNull("Portada") ? null : reader.GetString("Portada"),
+                Propietario = reader.IsDBNull("Nombre") ? null : new Propietario
                 {
                     Id = reader.GetInt32("PropietarioId"),
                     Nombre = reader.GetString("Nombre"),
@@ -243,6 +244,57 @@ namespace Inmobiliaria.Models
                     Nombre = reader.GetString("TipoNombre")
                 }
             };
+        }
+
+        public int ModificarPortada(int id, string url)
+        {
+            var query = @"
+                UPDATE Inmuebles SET
+                Portada=@portada
+                WHERE Id = @id";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@portada", String.IsNullOrEmpty(url) ? (object)DBNull.Value : url },
+                { "@id", id }
+            };
+            return ExecuteNonQuery(query, parameters);
+        }
+
+        public List<Inmueble> ObtenerDisponiblesEntreFechas(DateTime fechaInicio, DateTime fechaFin)
+        {
+            var inmuebles = new List<Inmueble>();
+            var query = @"
+                SELECT i.Id, i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible, 
+                       i.PropietarioId, i.TipoInmuebleId, i.Observaciones, i.Portada,
+                       p.Nombre, p.Apellido, p.Dni, p.Telefono, p.Email,
+                       t.Nombre as TipoNombre
+                FROM Inmuebles i
+                LEFT JOIN Propietarios p ON i.PropietarioId = p.Id
+                LEFT JOIN TiposInmueble t ON i.TipoInmuebleId = t.Id
+                WHERE i.Disponible = 1 
+                AND i.Id NOT IN (
+                    SELECT DISTINCT c.InmuebleId 
+                    FROM Contratos c 
+                    WHERE c.FechaTerminacionAnticipada IS NULL 
+                    AND (
+                        (c.FechaInicio <= @fechaFin AND c.FechaFin >= @fechaInicio)
+                    )
+                )
+                ORDER BY i.Id";
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "@fechaInicio", fechaInicio },
+                { "@fechaFin", fechaFin }
+            };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                inmuebles.Add(MapFromReader(reader));
+            }
+
+            return inmuebles;
         }
     }
 }

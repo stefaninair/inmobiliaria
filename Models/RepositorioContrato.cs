@@ -16,6 +16,7 @@ namespace Inmobiliaria.Models
             var contratos = new List<Contrato>();
             var query = @"
                 SELECT c.Id, c.InmuebleId, c.InquilinoId, c.MontoMensual, c.FechaInicio, c.FechaFin, 
+                       c.FechaTerminacionAnticipada, c.Multa, c.MotivoTerminacion,
                        c.CreadoPorUserId, c.CreadoEn,
                        i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
                        p.Nombre as PropietarioNombre, p.Apellido as PropietarioApellido, p.Dni as PropietarioDni,
@@ -39,6 +40,7 @@ namespace Inmobiliaria.Models
         {
             var query = @"
                 SELECT c.Id, c.InmuebleId, c.InquilinoId, c.MontoMensual, c.FechaInicio, c.FechaFin, 
+                       c.FechaTerminacionAnticipada, c.Multa, c.MotivoTerminacion,
                        c.CreadoPorUserId, c.CreadoEn,
                        i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
                        p.Nombre as PropietarioNombre, p.Apellido as PropietarioApellido, p.Dni as PropietarioDni,
@@ -118,7 +120,7 @@ namespace Inmobiliaria.Models
                 LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
                 LEFT JOIN Propietarios p ON i.PropietarioId = p.Id
                 LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
-                WHERE c.InmuebleId = @inmuebleId AND c.FechaFin >= CURDATE()
+                WHERE c.InmuebleId = @inmuebleId AND c.FechaFin >= date('now')
                 ORDER BY c.FechaInicio DESC";
             var parameters = new Dictionary<string, object> { { "@inmuebleId", inmuebleId } };
 
@@ -163,6 +165,7 @@ namespace Inmobiliaria.Models
             var offset = (pagina - 1) * tamanoPagina;
             var query = @"
                 SELECT c.Id, c.InmuebleId, c.InquilinoId, c.MontoMensual, c.FechaInicio, c.FechaFin, 
+                       c.FechaTerminacionAnticipada, c.Multa, c.MotivoTerminacion,
                        c.CreadoPorUserId, c.CreadoEn,
                        i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
                        p.Nombre as PropietarioNombre, p.Apellido as PropietarioApellido, p.Dni as PropietarioDni,
@@ -194,6 +197,61 @@ namespace Inmobiliaria.Models
             return Convert.ToInt32(result);
         }
 
+        public int RenovarContrato(int contratoId, DateTime nuevaFechaFin, decimal? nuevoMontoMensual = null)
+        {
+            var query = @"
+                UPDATE Contratos 
+                SET FechaFin = @nuevaFechaFin, 
+                    MontoMensual = COALESCE(@nuevoMontoMensual, MontoMensual)
+                WHERE Id = @contratoId";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", contratoId },
+                { "@nuevaFechaFin", nuevaFechaFin }
+            };
+
+            if (nuevoMontoMensual.HasValue)
+            {
+                parameters.Add("@nuevoMontoMensual", nuevoMontoMensual.Value);
+            }
+            else
+            {
+                parameters.Add("@nuevoMontoMensual", DBNull.Value);
+            }
+
+            return ExecuteNonQuery(query, parameters);
+        }
+
+        public int TerminarContrato(int contratoId, DateTime fechaTerminacion, decimal? multa = null, string? motivo = null)
+        {
+            Console.WriteLine($"Repositorio - Terminando contrato {contratoId}:");
+            Console.WriteLine($"Fecha: {fechaTerminacion}, Multa: {multa}, Motivo: {motivo}");
+            
+            var query = @"
+                UPDATE Contratos 
+                SET FechaTerminacionAnticipada = @fechaTerminacion,
+                    Multa = @multa,
+                    MotivoTerminacion = @motivo
+                WHERE Id = @contratoId";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", contratoId },
+                { "@fechaTerminacion", fechaTerminacion },
+                { "@multa", multa ?? (object)DBNull.Value },
+                { "@motivo", motivo ?? (object)DBNull.Value }
+            };
+
+            Console.WriteLine($"Query: {query}");
+            foreach (var param in parameters)
+            {
+                Console.WriteLine($"  {param.Key}: {param.Value}");
+            }
+
+            var result = ExecuteNonQuery(query, parameters);
+            Console.WriteLine($"Resultado: {result} filas afectadas");
+            return result;
+        }
+
         private Contrato MapFromReader(IDataReader reader)
         {
             return new Contrato
@@ -204,6 +262,9 @@ namespace Inmobiliaria.Models
                 MontoMensual = reader.GetDecimal("MontoMensual"),
                 FechaInicio = reader.GetDateTime("FechaInicio"),
                 FechaFin = reader.GetDateTime("FechaFin"),
+                FechaTerminacionAnticipada = reader.IsDBNull("FechaTerminacionAnticipada") ? null : reader.GetDateTime("FechaTerminacionAnticipada"),
+                Multa = reader.IsDBNull("Multa") ? null : reader.GetDecimal("Multa"),
+                MotivoTerminacion = reader.IsDBNull("MotivoTerminacion") ? null : reader.GetString("MotivoTerminacion"),
                 CreadoPorUserId = reader.GetInt32("CreadoPorUserId"),
                 CreadoEn = reader.GetDateTime("CreadoEn"),
                 Inmueble = new Inmueble
@@ -215,19 +276,88 @@ namespace Inmobiliaria.Models
                     Superficie = reader.GetDecimal("Superficie"),
                     Precio = reader.GetDecimal("Precio"),
                     Disponible = reader.GetBoolean("Disponible"),
-                    Propietario = new Propietario
+                    Propietario = reader.IsDBNull("PropietarioNombre") ? null : new Propietario
                     {
                         Nombre = reader.GetString("PropietarioNombre"),
                         Apellido = reader.GetString("PropietarioApellido"),
                         Dni = reader.GetString("PropietarioDni")
                     }
                 },
-                Inquilino = new Inquilino
+                Inquilino = reader.IsDBNull("InquilinoNombre") ? null : new Inquilino
                 {
                     Id = reader.GetInt32("InquilinoId"),
                     Nombre = reader.GetString("InquilinoNombre"),
                     Apellido = reader.GetString("InquilinoApellido"),
                     Dni = reader.GetString("InquilinoDni")
+                }
+            };
+        }
+
+        public List<Pago> ObtenerPagosPorContrato(int contratoId)
+        {
+            var pagos = new List<Pago>();
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones,
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       u.Nombre as CreadoPorNombre, u.Apellido as CreadoPorApellido
+                FROM Pagos p
+                LEFT JOIN Usuarios u ON p.CreadoPorUserId = u.Id
+                WHERE p.ContratoId = @contratoId AND p.Eliminado = 0
+                ORDER BY p.FechaPago DESC";
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", contratoId }
+            };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                pagos.Add(MapPagoFromReader(reader));
+            }
+
+            return pagos;
+        }
+
+        public int CrearPago(Pago pago)
+        {
+            var query = @"
+                INSERT INTO Pagos (ContratoId, Monto, FechaPago, Periodo, Observaciones, CreadoPorUserId)
+                VALUES (@contratoId, @monto, @fechaPago, @periodo, @observaciones, @creadoPorUserId)";
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "@contratoId", pago.ContratoId },
+                { "@monto", pago.Monto },
+                { "@fechaPago", pago.FechaPago },
+                { "@periodo", pago.Periodo },
+                { "@observaciones", pago.Observaciones ?? (object)DBNull.Value },
+                { "@creadoPorUserId", pago.CreadoPorUserId }
+            };
+
+            return ExecuteNonQuery(query, parameters);
+        }
+
+        private Pago MapPagoFromReader(IDataReader reader)
+        {
+            return new Pago
+            {
+                Id = reader.GetInt32("Id"),
+                ContratoId = reader.GetInt32("ContratoId"),
+                Monto = reader.GetDecimal("Monto"),
+                FechaPago = reader.GetDateTime("FechaPago"),
+                Periodo = reader.GetString("Periodo"),
+                Observaciones = reader.IsDBNull("Observaciones") ? null : reader.GetString("Observaciones"),
+                CreadoPorUserId = reader.GetInt32("CreadoPorUserId"),
+                CreadoEn = reader.GetDateTime("CreadoEn"),
+                AnuladoPorUserId = reader.IsDBNull("AnuladoPorUserId") ? null : reader.GetInt32("AnuladoPorUserId"),
+                AnuladoEn = reader.IsDBNull("AnuladoEn") ? null : reader.GetDateTime("AnuladoEn"),
+                MotivoAnulacion = reader.IsDBNull("MotivoAnulacion") ? null : reader.GetString("MotivoAnulacion"),
+                CreadoPorUser = new Usuario
+                {
+                    Id = reader.GetInt32("CreadoPorUserId"),
+                    Nombre = reader.GetString("CreadoPorNombre"),
+                    Apellido = reader.GetString("CreadoPorApellido")
                 }
             };
         }

@@ -27,6 +27,17 @@
                 <i class="fa-solid fa-chart-bar"></i> Estadísticas
             </a>
         </div>
+        <div class="btn-group mt-2" role="group">
+            <a class="btn btn-success" asp-action="PorVencer" asp-route-dias="30">
+                <i class="fa-solid fa-clock"></i> Por Vencer (30 días)
+            </a>
+            <a class="btn btn-success" asp-action="PorVencer" asp-route-dias="60">
+                <i class="fa-solid fa-clock"></i> Por Vencer (60 días)
+            </a>
+            <a class="btn btn-success" asp-action="PorVencer" asp-route-dias="90">
+                <i class="fa-solid fa-clock"></i> Por Vencer (90 días)
+            </a>
+        </div>
     </div>
 </div>
 
@@ -46,6 +57,7 @@
             <th>Fecha Fin</th>
             <th>Monto Mensual</th>
             <th>Estado</th>
+            <th>Días Restantes</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -62,11 +74,28 @@
                 <td>
                     @if (contrato.FechaTerminacionAnticipada != null)
                     {
-                        <span class="badge badge-warning">Terminado Anticipadamente</span>
+                        <span class="badge badge-warning">Terminado</span>
                     }
                     else if (contrato.Vigente)
                     {
                         <span class="badge badge-success">Vigente</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-danger">Vencido</span>
+                    }
+                </td>
+                <td>
+                    @{
+                        var diasRestantes = (contrato.FechaFin - DateTime.Now).Days;
+                    }
+                    @if (contrato.FechaTerminacionAnticipada != null)
+                    {
+                        <span class="text-muted">Terminado</span>
+                    }
+                    else if (diasRestantes > 0)
+                    {
+                        <span class="badge badge-info">@diasRestantes días</span>
                     }
                     else
                     {
@@ -80,6 +109,9 @@
                         </a>
                         <a class="btn btn-primary" asp-action="Edit" asp-route-id="@contrato.Id" title="Editar">
                             <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a class="btn btn-info" asp-action="Pagos" asp-route-id="@contrato.Id" title="Ver Pagos">
+                            <i class="fa-solid fa-money-bill"></i>
                         </a>
                         @if (!contrato.FechaTerminacionAnticipada.HasValue)
                         {

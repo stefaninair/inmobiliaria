@@ -27,7 +27,7 @@ namespace Inmobiliaria.Controllers
                 using var connection = _dbConnection.GetConnection();
                 connection.Open();
 
-                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios ORDER BY Id";
+                var query = "SELECT Id, Nombre, Apellido, Email, Clave, Rol, AvatarPath FROM Usuarios ORDER BY Id";
                 using var command = connection.CreateCommand();
                 command.CommandText = query;
 
@@ -38,9 +38,11 @@ namespace Inmobiliaria.Controllers
                     {
                         Id = reader.GetInt32("Id"),
                         Nombre = reader.GetString("Nombre"),
+                        Apellido = reader.GetString("Apellido"),
                         Email = reader.GetString("Email"),
                         Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
-                        ClaveHash = reader.GetString("Clave")
+                        ClaveHash = reader.GetString("Clave"),
+                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
                     });
                 }
             }
@@ -60,7 +62,7 @@ namespace Inmobiliaria.Controllers
                 using var connection = _dbConnection.GetConnection();
                 connection.Open();
 
-                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                var query = "SELECT Id, Nombre, Apellido, Email, Clave, Rol, AvatarPath FROM Usuarios WHERE Id = @id";
                 using var command = connection.CreateCommand();
                 command.CommandText = query;
                 command.Parameters.Add(CreateParameter(command, "@id", id));
@@ -72,9 +74,11 @@ namespace Inmobiliaria.Controllers
                     {
                         Id = reader.GetInt32("Id"),
                         Nombre = reader.GetString("Nombre"),
+                        Apellido = reader.GetString("Apellido"),
                         Email = reader.GetString("Email"),
                         Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
-                        ClaveHash = reader.GetString("Clave")
+                        ClaveHash = reader.GetString("Clave"),
+                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
                     };
                     return View(usuario);
                 }
@@ -98,32 +102,68 @@ namespace Inmobiliaria.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(Usuario usuario)
         {
-            if (ModelState.IsValid)
+            // Debug: Log de los valores recibidos
+            Console.WriteLine($"Usuario recibido - Nombre: {usuario.Nombre}, Apellido: {usuario.Apellido}, Email: {usuario.Email}, Clave: {usuario.Clave}, Rol: {usuario.Rol}");
+            
+            // Debug: Log del estado del modelo
+            if (!ModelState.IsValid)
             {
-                try
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                var errorMessage = $"Errores de validación: {string.Join(", ", errors)}";
+                Console.WriteLine(errorMessage);
+                
+                // Debug: Log de cada error individual
+                foreach (var key in ModelState.Keys)
                 {
-                    using var connection = _dbConnection.GetConnection();
-                    connection.Open();
+                    var state = ModelState[key];
+                    if (state.Errors.Any())
+                    {
+                        Console.WriteLine($"Error en {key}: {string.Join(", ", state.Errors.Select(e => e.ErrorMessage))}");
+                    }
+                }
+                
+                TempData["Error"] = errorMessage;
+                return View(usuario);
+            }
 
-                    var query = "INSERT INTO Usuarios (Nombre, Email, Clave, Rol) VALUES (@nombre, @email, @clave, @rol)";
-                    using var command = connection.CreateCommand();
-                    command.CommandText = query;
-                    command.Parameters.Add(CreateParameter(command, "@nombre", usuario.Nombre));
-                    command.Parameters.Add(CreateParameter(command, "@email", usuario.Email));
-                    command.Parameters.Add(CreateParameter(command, "@clave", BCrypt.Net.BCrypt.HashPassword(usuario.ClaveHash)));
-                    command.Parameters.Add(CreateParameter(command, "@rol", usuario.Rol.ToString()));
+            try
+            {
+                using var connection = _dbConnection.GetConnection();
+                connection.Open();
 
-                    command.ExecuteNonQuery();
+                var query = "INSERT INTO Usuarios (Nombre, Apellido, Email, Clave, Rol) VALUES (@nombre, @apellido, @email, @clave, @rol)";
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(CreateParameter(command, "@nombre", usuario.Nombre));
+                command.Parameters.Add(CreateParameter(command, "@apellido", usuario.Apellido));
+                command.Parameters.Add(CreateParameter(command, "@email", usuario.Email));
+                command.Parameters.Add(CreateParameter(command, "@clave", BCrypt.Net.BCrypt.HashPassword(usuario.Clave)));
+                command.Parameters.Add(CreateParameter(command, "@rol", usuario.Rol.ToString()));
 
+                Console.WriteLine($"Ejecutando query: {query}");
+                Console.WriteLine($"Parámetros: Nombre={usuario.Nombre}, Apellido={usuario.Apellido}, Email={usuario.Email}, Rol={usuario.Rol}");
+
+                var rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine($"Filas afectadas: {rowsAffected}");
+                
+                if (rowsAffected > 0)
+                {
                     TempData["Success"] = "Usuario creado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
-                catch (Exception ex)
+                else
                 {
-                    TempData["Error"] = $"Error al crear el usuario: {ex.Message}";
+                    TempData["Error"] = "No se pudo crear el usuario. No se insertaron filas.";
+                    return View(usuario);
                 }
             }
-            return View(usuario);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al crear usuario: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                TempData["Error"] = $"Error al crear el usuario: {ex.Message}";
+                return View(usuario);
+            }
         }
 
         // GET: Usuarios/Edit/5
@@ -134,7 +174,7 @@ namespace Inmobiliaria.Controllers
                 using var connection = _dbConnection.GetConnection();
                 connection.Open();
 
-                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                var query = "SELECT Id, Nombre, Apellido, Email, Clave, Rol, AvatarPath FROM Usuarios WHERE Id = @id";
                 using var command = connection.CreateCommand();
                 command.CommandText = query;
                 command.Parameters.Add(CreateParameter(command, "@id", id));
@@ -146,9 +186,11 @@ namespace Inmobiliaria.Controllers
                     {
                         Id = reader.GetInt32("Id"),
                         Nombre = reader.GetString("Nombre"),
+                        Apellido = reader.GetString("Apellido"),
                         Email = reader.GetString("Email"),
                         Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
-                        ClaveHash = reader.GetString("Clave")
+                        ClaveHash = reader.GetString("Clave"),
+                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
                     };
                     return View(usuario);
                 }
@@ -178,11 +220,12 @@ namespace Inmobiliaria.Controllers
                     using var connection = _dbConnection.GetConnection();
                     connection.Open();
 
-                    var query = "UPDATE Usuarios SET Nombre = @nombre, Email = @email, Rol = @rol WHERE Id = @id";
+                    var query = "UPDATE Usuarios SET Nombre = @nombre, Apellido = @apellido, Email = @email, Rol = @rol WHERE Id = @id";
                     using var command = connection.CreateCommand();
                     command.CommandText = query;
                     command.Parameters.Add(CreateParameter(command, "@id", usuario.Id));
                     command.Parameters.Add(CreateParameter(command, "@nombre", usuario.Nombre));
+                    command.Parameters.Add(CreateParameter(command, "@apellido", usuario.Apellido));
                     command.Parameters.Add(CreateParameter(command, "@email", usuario.Email));
                     command.Parameters.Add(CreateParameter(command, "@rol", usuario.Rol.ToString()));
 
@@ -207,7 +250,7 @@ namespace Inmobiliaria.Controllers
                 using var connection = _dbConnection.GetConnection();
                 connection.Open();
 
-                var query = "SELECT Id, Nombre, Email, Clave, Rol FROM Usuarios WHERE Id = @id";
+                var query = "SELECT Id, Nombre, Apellido, Email, Clave, Rol, AvatarPath FROM Usuarios WHERE Id = @id";
                 using var command = connection.CreateCommand();
                 command.CommandText = query;
                 command.Parameters.Add(CreateParameter(command, "@id", id));
@@ -219,9 +262,11 @@ namespace Inmobiliaria.Controllers
                     {
                         Id = reader.GetInt32("Id"),
                         Nombre = reader.GetString("Nombre"),
+                        Apellido = reader.GetString("Apellido"),
                         Email = reader.GetString("Email"),
                         Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
-                        ClaveHash = reader.GetString("Clave")
+                        ClaveHash = reader.GetString("Clave"),
+                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
                     };
                     return View(usuario);
                 }

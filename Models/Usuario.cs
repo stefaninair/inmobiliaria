@@ -20,9 +20,8 @@ namespace Inmobiliaria.Models
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
 
-        [Required(ErrorMessage = "La clave es requerida")]
         [StringLength(255, ErrorMessage = "La clave no puede exceder los 255 caracteres")]
-        [Display(Name = "Clave")]
+        [Display(Name = "Clave Hash")]
         public string ClaveHash { get; set; } = "";
 
         [Required(ErrorMessage = "El rol es requerido")]
@@ -46,6 +45,13 @@ namespace Inmobiliaria.Models
         [NotMapped]
         [Display(Name = "Avatar")]
         public IFormFile? AvatarFile { get; set; }
+
+        [NotMapped]
+        [Display(Name = "Clave")]
+        [DataType(DataType.Password)]
+        [Required(ErrorMessage = "La clave es requerida")]
+        [StringLength(255, MinimumLength = 6, ErrorMessage = "La clave debe tener al menos 6 caracteres")]
+        public string? Clave { get; set; }
 
         [NotMapped]
         [Display(Name = "Clave Actual")]

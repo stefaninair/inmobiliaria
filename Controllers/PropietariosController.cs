@@ -1,5 +1,7 @@
+
 using Microsoft.AspNetCore.Mvc;
 using Inmobiliaria.Models;
+using Inmobiliaria.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Inmobiliaria.Controllers
@@ -8,10 +10,12 @@ namespace Inmobiliaria.Controllers
     public class PropietariosController : Controller
     {
         private readonly RepositorioPropietario _repositorio;
+        private readonly ValidationService _validationService;
 
-        public PropietariosController(RepositorioPropietario repositorio)
+        public PropietariosController(RepositorioPropietario repositorio, ValidationService validationService)
         {
             _repositorio = repositorio;
+            _validationService = validationService;
         }
 
         // GET: Propietarios
@@ -115,6 +119,15 @@ namespace Inmobiliaria.Controllers
             {
                 return NotFound();
             }
+
+            // Verificar si puede ser eliminado
+            var validationResult = _validationService.CanDeletePropietario(id);
+            if (!validationResult.IsValid)
+            {
+                ViewBag.ErrorMessage = validationResult.ErrorMessage;
+                ViewBag.ContratosVigentes = _validationService.GetContratosVigentesPropietario(id);
+            }
+
             return View(propietario);
         }
 
@@ -123,6 +136,14 @@ namespace Inmobiliaria.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
+            // Verificar si puede ser eliminado antes de proceder
+            var validationResult = _validationService.CanDeletePropietario(id);
+            if (!validationResult.IsValid)
+            {
+                TempData["Error"] = validationResult.ErrorMessage;
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 _repositorio.Baja(id);
@@ -133,6 +154,21 @@ namespace Inmobiliaria.Controllers
                 TempData["Error"] = $"Error al eliminar el propietario: {ex.Message}";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Propietarios/Buscar/{q}
+        [Route("[controller]/Buscar/{q}", Name = "BuscarPropietarios")]
+        public IActionResult Buscar(string q)
+        {
+            try
+            {
+                var res = _repositorio.BuscarPorNombre(q);
+                return Json(new { datos = res });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
     }
 }

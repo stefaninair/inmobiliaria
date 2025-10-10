@@ -93,11 +93,12 @@
                 <td>
                     @if (!string.IsNullOrEmpty(item.Portada))
                     {
-                        <img src="~/img/@item.Portada" alt="Portada" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;" />
+                        var x = item.Portada + "?" + rnd.Next();
+                        <img width="32" src="@x" />
                     }
                     else
                     {
-                        <span class="text-muted">Sin foto</span>
+                        <span>Sin foto</span>
                     }
                 </td>
                 <td>
@@ -114,8 +115,8 @@
                         <a class="btn btn-secondary" asp-action="Details" asp-route-id="@item.Id" title="Ver">
                             <i class="fa-solid fa-eye"></i>
                         </a>
-                        <a class="btn btn-info" asp-action="VerFotos" asp-route-id="@item.Id" title="Ver Fotos">
-                            <i class="fa-solid fa-camera"></i>
+                        <a class="btn btn-info" asp-action="Imagenes" asp-route-id="@item.Id" title="Ver imágenes">
+                            <i class="fa-solid fa-images"></i>
                         </a>
                     </div>
                 </td>

@@ -45,6 +45,9 @@ namespace Inmobiliaria.Models
         [Display(Name = "Multa")]
         public decimal? Multa { get; set; }
 
+        [Display(Name = "Motivo de Terminación")]
+        public string? MotivoTerminacion { get; set; }
+
         // Campos de auditoría
         [Required]
         [Display(Name = "Creado por")]
@@ -69,6 +72,8 @@ namespace Inmobiliaria.Models
         public decimal Monto => MontoMensual;
 
         [NotMapped]
-        public bool Vigente => FechaTerminacionAnticipada == null && DateTime.Now >= FechaInicio && DateTime.Now <= FechaFin;
+        public bool Vigente => FechaTerminacionAnticipada == null && 
+                              DateTime.Now >= FechaInicio && 
+                              DateTime.Now <= FechaFin;
     }
 }

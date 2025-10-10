@@ -83,7 +83,7 @@ namespace Inmobiliaria.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -104,7 +104,7 @@ namespace Inmobiliaria.Controllers
                 using var connection = _dbConnection.GetConnection();
                 connection.Open();
 
-                var query = "SELECT Id, Nombre, Email, Rol, AvatarPath FROM Usuarios WHERE Id = @id";
+                var query = "SELECT Id, Nombre, Email, Rol FROM Usuarios WHERE Id = @id";
                 using var command = connection.CreateCommand();
                 command.CommandText = query;
                 command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
@@ -117,10 +117,8 @@ namespace Inmobiliaria.Controllers
                         Id = reader.GetInt32("Id"),
                         Nombre = reader.GetString("Nombre"),
                         Email = reader.GetString("Email"),
-                        Rol = Enum.Parse<Rol>(reader.GetString("Rol")),
-                        AvatarPath = reader.IsDBNull("AvatarPath") ? null : reader.GetString("AvatarPath")
+                        Rol = Enum.Parse<Rol>(reader.GetString("Rol"))
                     };
-                    Console.WriteLine($"Avatar cargado: {usuario.AvatarPath}");
                     return View(usuario);
                 }
 
@@ -130,160 +128,6 @@ namespace Inmobiliaria.Controllers
             {
                 TempData["Error"] = $"Error al cargar el perfil: {ex.Message}";
                 return RedirectToAction("Login");
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CambiarAvatar(IFormFile avatarFile)
-        {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            if (userIdClaim == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            try
-            {
-                if (avatarFile == null || avatarFile.Length == 0)
-                {
-                    TempData["Error"] = "Debe seleccionar un archivo.";
-                    return RedirectToAction("Perfil");
-                }
-
-                Console.WriteLine($"Archivo recibido: {avatarFile.FileName}, Tamaño: {avatarFile.Length}, Tipo: {avatarFile.ContentType}");
-
-                // Validar tipo de archivo
-                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
-                if (!allowedTypes.Contains(avatarFile.ContentType))
-                {
-                    TempData["Error"] = "Solo se permiten archivos JPG, PNG y GIF.";
-                    return RedirectToAction("Perfil");
-                }
-
-                // Validar tamaño (2MB máximo)
-                if (avatarFile.Length > 2 * 1024 * 1024)
-                {
-                    TempData["Error"] = "El archivo no puede ser mayor a 2MB.";
-                    return RedirectToAction("Perfil");
-                }
-
-                // Crear directorio de avatares si no existe
-                var avatarsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
-                if (!Directory.Exists(avatarsDir))
-                {
-                    Directory.CreateDirectory(avatarsDir);
-                }
-
-                // Generar nombre único para el archivo
-                var fileExtension = Path.GetExtension(avatarFile.FileName);
-                var fileName = $"avatar_{userIdClaim}_{DateTime.Now:yyyyMMddHHmmss}{fileExtension}";
-                var filePath = Path.Combine(avatarsDir, fileName);
-
-                // Guardar archivo
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await avatarFile.CopyToAsync(stream);
-                }
-
-                // Actualizar ruta en base de datos
-                var relativePath = $"uploads/avatars/{fileName}";
-                Console.WriteLine($"Actualizando avatar en BD: {relativePath} para usuario {userIdClaim}");
-                
-                using var connection = _dbConnection.GetConnection();
-                connection.Open();
-
-                var query = "UPDATE Usuarios SET AvatarPath = @avatarPath WHERE Id = @id";
-                using var command = connection.CreateCommand();
-                command.CommandText = query;
-                command.Parameters.Add(CreateParameter(command, "@avatarPath", relativePath));
-                command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
-
-                var rowsAffected = command.ExecuteNonQuery();
-                Console.WriteLine($"Filas afectadas: {rowsAffected}");
-
-                TempData["Success"] = "Avatar actualizado exitosamente.";
-                return RedirectToAction("Perfil");
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al cambiar el avatar: {ex.Message}";
-                return RedirectToAction("Perfil");
-            }
-        }
-
-        [HttpPost]
-        public IActionResult CambiarPassword(string claveActual, string nuevaClave, string confirmarClave)
-        {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            if (userIdClaim == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            try
-            {
-                if (string.IsNullOrEmpty(claveActual) || string.IsNullOrEmpty(nuevaClave) || string.IsNullOrEmpty(confirmarClave))
-                {
-                    TempData["Error"] = "Todos los campos son requeridos.";
-                    return RedirectToAction("Perfil");
-                }
-
-                if (nuevaClave.Length < 6)
-                {
-                    TempData["Error"] = "La nueva contraseña debe tener al menos 6 caracteres.";
-                    return RedirectToAction("Perfil");
-                }
-
-                if (nuevaClave != confirmarClave)
-                {
-                    TempData["Error"] = "Las contraseñas no coinciden.";
-                    return RedirectToAction("Perfil");
-                }
-
-                using var connection = _dbConnection.GetConnection();
-                connection.Open();
-
-                // Verificar contraseña actual
-                var query = "SELECT Clave FROM Usuarios WHERE Id = @id";
-                using var command = connection.CreateCommand();
-                command.CommandText = query;
-                command.Parameters.Add(CreateParameter(command, "@id", int.Parse(userIdClaim)));
-
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    var hashedPassword = reader.GetString("Clave");
-                    if (!BCrypt.Net.BCrypt.Verify(claveActual, hashedPassword))
-                    {
-                        TempData["Error"] = "La contraseña actual es incorrecta.";
-                        return RedirectToAction("Perfil");
-                    }
-                }
-                else
-                {
-                    TempData["Error"] = "Usuario no encontrado.";
-                    return RedirectToAction("Login");
-                }
-
-                reader.Close();
-
-                // Actualizar contraseña
-                var newHashedPassword = BCrypt.Net.BCrypt.HashPassword(nuevaClave);
-                var updateQuery = "UPDATE Usuarios SET Clave = @nuevaClave WHERE Id = @id";
-                using var updateCommand = connection.CreateCommand();
-                updateCommand.CommandText = updateQuery;
-                updateCommand.Parameters.Add(CreateParameter(updateCommand, "@nuevaClave", newHashedPassword));
-                updateCommand.Parameters.Add(CreateParameter(updateCommand, "@id", int.Parse(userIdClaim)));
-
-                updateCommand.ExecuteNonQuery();
-
-                TempData["Success"] = "Contraseña actualizada exitosamente.";
-                return RedirectToAction("Perfil");
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al cambiar la contraseña: {ex.Message}";
-                return RedirectToAction("Perfil");
             }
         }
 

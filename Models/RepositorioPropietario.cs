@@ -113,6 +113,25 @@ namespace Inmobiliaria.Models
             return Convert.ToInt32(result);
         }
 
+        public List<Propietario> BuscarPorNombre(string nombre)
+        {
+            var propietarios = new List<Propietario>();
+            var query = @"
+                SELECT Id, Nombre, Apellido, Dni, Telefono, Email, Clave 
+                FROM Propietarios
+                WHERE Nombre LIKE @nombre OR Apellido LIKE @nombre
+                ORDER BY Nombre, Apellido";
+            var parameters = new Dictionary<string, object> { { "@nombre", $"%{nombre}%" } };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                propietarios.Add(MapFromReader(reader));
+            }
+
+            return propietarios;
+        }
+
         private Propietario MapFromReader(IDataReader reader)
         {
             return new Propietario

@@ -232,5 +232,85 @@ namespace Inmobiliaria.Controllers
             var tiposInmueble = _repositorioTipoInmueble.ObtenerTodos();
             ViewBag.TiposInmueble = tiposInmueble;
         }
+
+        // GET: Inmuebles/Imagenes/5
+        public ActionResult Imagenes(int id, [FromServices] RepositorioImagen repoImagen)
+        {
+            var entidad = _repositorio.ObtenerPorId(id);
+            if (entidad == null)
+                return NotFound();
+            entidad.Imagenes = repoImagen.BuscarPorInmueble(id);
+            return View(entidad);
+        }
+
+        // POST: Inmuebles/Portada
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Portada(Imagen entidad, [FromServices] IWebHostEnvironment environment)
+        {
+            try
+            {
+                //Recuperar el inmueble y eliminar la imagen anterior
+                var inmueble = _repositorio.ObtenerPorId(entidad.InmuebleId);
+                if (inmueble != null && !string.IsNullOrEmpty(inmueble.Portada))
+                {
+                    string rutaEliminar = Path.Combine(environment.WebRootPath, inmueble.Portada.TrimStart('/'));
+                    if (System.IO.File.Exists(rutaEliminar))
+                    {
+                        System.IO.File.Delete(rutaEliminar);
+                    }
+                }
+                
+                if (entidad.Archivo != null && entidad.Archivo.Length > 0)
+                {
+                    string wwwPath = environment.WebRootPath;
+                    string path = Path.Combine(wwwPath, "Uploads");
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    path = Path.Combine(path, "Inmuebles");
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    
+                    string fileName = "portada_" + entidad.InmuebleId + Path.GetExtension(entidad.Archivo.FileName);
+                    string rutaFisicaCompleta = Path.Combine(path, fileName);
+                    
+                    using (var stream = new FileStream(rutaFisicaCompleta, FileMode.Create))
+                    {
+                        entidad.Archivo.CopyTo(stream);
+                    }
+                    
+                    entidad.Url = "/Uploads/Inmuebles/" + fileName;
+                }
+                else //sin imagen
+                {
+                    entidad.Url = string.Empty;
+                }
+                
+                _repositorio.ModificarPortada(entidad.InmuebleId, entidad.Url);
+                TempData["Mensaje"] = "Portada actualizada correctamente";
+                return RedirectToAction(nameof(Imagenes), new { id = entidad.InmuebleId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Imagenes), new { id = entidad.InmuebleId });
+            }
+        }
+
+        // POST: Inmuebles/Disponibles
+        [HttpPost]
+        public IActionResult Disponibles(DateTime fechaInicio, DateTime fechaFin)
+        {
+            var inmueblesDisponibles = _repositorio.ObtenerDisponiblesEntreFechas(fechaInicio, fechaFin);
+            
+            ViewBag.FechaInicio = fechaInicio;
+            ViewBag.FechaFin = fechaFin;
+            
+            return View("Disponibles", inmueblesDisponibles);
+        }
     }
 }

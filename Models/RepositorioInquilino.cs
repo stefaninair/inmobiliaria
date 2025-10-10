@@ -111,6 +111,25 @@ namespace Inmobiliaria.Models
             return Convert.ToInt32(result);
         }
 
+        public List<Inquilino> BuscarPorNombre(string nombre)
+        {
+            var inquilinos = new List<Inquilino>();
+            var query = @"
+                SELECT Id, Nombre, Apellido, Dni, Telefono, Email 
+                FROM Inquilinos
+                WHERE Nombre LIKE @nombre OR Apellido LIKE @nombre
+                ORDER BY Nombre, Apellido";
+            var parameters = new Dictionary<string, object> { { "@nombre", $"%{nombre}%" } };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                inquilinos.Add(MapFromReader(reader));
+            }
+
+            return inquilinos;
+        }
+
         private Inquilino MapFromReader(IDataReader reader)
         {
             return new Inquilino

@@ -1,0 +1,143 @@
+@model List<Inmobiliaria.Models.Pago>
+
+@{
+    ViewData["Title"] = "Pagos del Contrato";
+    var contrato = ViewBag.Contrato as Inmobiliaria.Models.Contrato;
+}
+
+<h1>Pagos del Contrato</h1>
+
+@if (contrato != null)
+{
+    <div class="alert alert-info">
+        <h4>Información del Contrato</h4>
+        <p><strong>ID:</strong> @contrato.Id</p>
+        <p><strong>Inmueble:</strong> @contrato.Inmueble?.Direccion</p>
+        <p><strong>Inquilino:</strong> @contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido</p>
+        <p><strong>Monto Mensual:</strong> $@contrato.MontoMensual.ToString("N2")</p>
+        <p><strong>Período:</strong> @contrato.FechaInicio.ToString("dd/MM/yyyy") - @contrato.FechaFin.ToString("dd/MM/yyyy")</p>
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a class="btn btn-success" asp-action="CrearPago" asp-route-contratoId="@contrato?.Id">
+            <i class="fa-solid fa-plus"></i> Nuevo Pago
+        </a>
+    </div>
+    <div class="col-md-6 text-right">
+        <a class="btn btn-secondary" asp-action="Index">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Contratos
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (Model != null && Model.Any())
+{
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Resumen de Pagos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Total Pagos:</strong> @Model.Count
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Monto Total:</strong> $@Model.Sum(p => p.Monto).ToString("N2")
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Promedio:</strong> $@(Model.Average(p => p.Monto).ToString("N2"))
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Último Pago:</strong> @Model.OrderByDescending(p => p.FechaPago).First().FechaPago.ToString("dd/MM/yyyy")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Fecha Pago</th>
+                <th>Período</th>
+                <th>Monto</th>
+                <th>Observaciones</th>
+                <th>Creado por</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Model)
+            {
+                <tr>
+                    <td>@pago.Id</td>
+                    <td>@pago.FechaPago.ToString("dd/MM/yyyy")</td>
+                    <td>@pago.Periodo</td>
+                    <td>$@pago.Monto.ToString("N2")</td>
+                    <td>@(pago.Observaciones ?? "-")</td>
+                    <td>@pago.CreadoPorUser?.Nombre @pago.CreadoPorUser?.Apellido</td>
+                    <td>
+                        @if (pago.AnuladoPorUserId != null)
+                        {
+                            <span class="badge badge-danger">Anulado</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-success">Activo</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a class="btn btn-info" asp-controller="Pagos" asp-action="Details" asp-route-id="@pago.Id" title="Ver detalles">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            @if (pago.AnuladoPorUserId == null)
+                            {
+                                <a class="btn btn-warning" asp-controller="Pagos" asp-action="Edit" asp-route-id="@pago.Id" title="Editar">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <a class="btn btn-danger" asp-controller="Pagos" asp-action="Anular" asp-route-id="@pago.Id" title="Anular">
+                                    <i class="fa-solid fa-ban"></i>
+                                </a>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="fa-solid fa-exclamation-triangle"></i>
+        No se encontraron pagos para este contrato.
+    </div>
+}

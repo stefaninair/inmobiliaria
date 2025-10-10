@@ -67,8 +67,13 @@
 
             <div class="form-group">
                 <label asp-for="PropietarioId" class="control-label">Propietario</label>
-                <input type="text" id="propietarioSearch" class="form-control" placeholder="Buscar propietario..." />
-                <input type="hidden" asp-for="PropietarioId" id="propietarioId" />
+                <select id="Propietario" asp-for="PropietarioId" class="form-control" name="PropietarioId">
+                    <option value="">Seleccione un propietario</option>
+                    @foreach (var item in ltaPropietarios)
+                    {
+                        <option value="@item.Id">@item.Nombre @item.Apellido</option>
+                    }
+                </select>
                 <span asp-validation-for="PropietarioId" class="text-danger"></span>
             </div>
 
@@ -101,24 +106,33 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <script src="~/js/autocomplete.js"></script>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar autocomplete para propietarios
-            initAutocomplete(
-                'propietarioSearch',
-                'propietarioId',
-                '/Inmuebles/BuscarPropietarios',
-                'Buscar propietario...'
-            );
-            
-            // Inicializar autocomplete para tipos de inmueble
-            initAutocomplete(
-                'tipoInmuebleSearch',
-                'tipoInmuebleId',
-                '/Inmuebles/BuscarTiposInmueble',
-                'Buscar tipo de inmueble...'
-            );
+        $(document).ready(function() {
+            $('#Propietario').select2({
+                language: "es",
+                theme: 'bootstrap',
+                placeholder: "Buscar propietario...",
+                minimumInputLength: 3,
+                maximumInputLength: 50,
+                ajax: {
+                    delay: 250,
+                    dataType: "json",
+                    cache: true,
+                    url: function (params) {
+                        let q = params.term ? encodeURIComponent(params.term) : "";
+                        return `/Propietarios/Buscar/${q}`;
+                    },
+                    processResults: function (res) {
+                        return {
+                            results: res.datos.map(p => ({
+                                id: p.id, 
+                                text: `${p.nombre} ${p.apellido}`
+                            }))
+                        };
+                    }
+                }
+            });
         });
     </script>
 }

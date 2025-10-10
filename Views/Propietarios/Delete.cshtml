@@ -6,7 +6,17 @@
 
 <h1>Eliminar Propietario</h1>
 
-<h3>¿Estás seguro de que quieres eliminar este propietario?</h3>
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">¡No se puede eliminar!</h4>
+        <p>@ViewBag.ErrorMessage</p>
+    </div>
+}
+else
+{
+    <h3>¿Estás seguro de que quieres eliminar este propietario?</h3>
+}
 <hr />
 
 <div class="row">
@@ -38,14 +48,55 @@
             </tr>
         </table>
 
-        <form asp-action="Delete">
-            <input type="hidden" asp-for="Id" />
+        @if (ViewBag.ErrorMessage == null)
+        {
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="Id" />
+                <div class="btn-group" role="group">
+                    <input type="submit" value="Eliminar" class="btn btn-danger" />
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        }
+        else
+        {
             <div class="btn-group" role="group">
-                <input type="submit" value="Eliminar" class="btn btn-danger" />
                 <a asp-action="Index" class="btn btn-secondary">
-                    <i class="fa-solid fa-arrow-left"></i> Cancelar
+                    <i class="fa-solid fa-arrow-left"></i> Volver
                 </a>
             </div>
-        </form>
+        }
     </div>
+    
+    @if (ViewBag.ContratosVigentes != null && ((List<Inmobiliaria.Services.ContratoInfo>)ViewBag.ContratosVigentes).Any())
+    {
+        <div class="col-md-6">
+            <h4>Contratos Vigentes</h4>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Inmueble</th>
+                            <th>Inquilino</th>
+                            <th>Fecha Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var contrato in (List<Inmobiliaria.Services.ContratoInfo>)ViewBag.ContratosVigentes)
+                        {
+                            <tr>
+                                <td>@contrato.Id</td>
+                                <td>@contrato.DireccionInmueble</td>
+                                <td>@contrato.InquilinoNombre</td>
+                                <td>@contrato.FechaFin.ToShortDateString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>

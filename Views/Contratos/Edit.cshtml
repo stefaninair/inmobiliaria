@@ -32,7 +32,7 @@
 
             <div class="form-group">
                 <label asp-for="InquilinoId" class="control-label">Inquilino</label>
-                <select asp-for="InquilinoId" class="form-control">
+                <select id="Inquilino" asp-for="InquilinoId" class="form-control" name="InquilinoId">
                     @foreach (var item in inquilinos)
                     {
                         <option value="@item.Id" selected="@(item.Id == Model.InquilinoId)">
@@ -83,4 +83,41 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            $('#Inquilino').select2({
+                language: "es",
+                theme: 'bootstrap',
+                placeholder: "Buscar inquilino...",
+                minimumInputLength: 3,
+                maximumInputLength: 50,
+                ajax: {
+                    delay: 250,
+                    dataType: "json",
+                    cache: true,
+                    url: function (params) {
+                        let q = params.term ? encodeURIComponent(params.term) : "";
+                        return `/Inquilinos/Buscar/${q}`;
+                    },
+                    processResults: function (res) {
+                        return {
+                            results: res.datos.map(i => ({
+                                id: i.id, 
+                                text: `${i.nombre} ${i.apellido}`
+                            }))
+                        };
+                    }
+                }
+            });
+            
+            // Preseleccionar el inquilino actual
+            var idOriginal = @Model.InquilinoId;
+            var textoOriginal = "@Model.Inquilino?.Nombre" + ' ' + "@Model.Inquilino?.Apellido";
+            if (idOriginal && textoOriginal) {
+                var option = new Option(textoOriginal, idOriginal, true, true);
+                $("#Inquilino").append(option).trigger('change');
+            }
+        });
+    </script>
 }

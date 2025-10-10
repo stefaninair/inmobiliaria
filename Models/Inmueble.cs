@@ -61,9 +61,10 @@ namespace Inmobiliaria.Models
 		public decimal Latitud { get; set; }
 		public decimal Longitud { get; set; }
 		public string? Portada { get; set; }
-		[NotMapped]
+		[NotMapped]//Para EF
 		public IFormFile? PortadaFile { get; set; }
-		[NotMapped]
+		[ForeignKey(nameof(Imagen.InmuebleId))]
+		public IList<Imagen> Imagenes { get; set; } = new List<Imagen>();
 		public bool Habilitado { get; set; } = true;
 	}
 }

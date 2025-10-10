@@ -43,6 +43,7 @@ builder.Services.AddHttpContextAccessor();
 
 // Registrar servicios
 builder.Services.AddScoped<Inmobiliaria.Services.PagoService>();
+builder.Services.AddScoped<Inmobiliaria.Services.ValidationService>();
 
 // Inyección de dependencias para los repositorios
 builder.Services.AddScoped<RepositorioPropietario>();
@@ -50,6 +51,7 @@ builder.Services.AddScoped<RepositorioInquilino>();
 builder.Services.AddScoped<RepositorioInmueble>();
 builder.Services.AddScoped<RepositorioContrato>();
 builder.Services.AddScoped<RepositorioTipoInmueble>();
+builder.Services.AddScoped<RepositorioImagen>();
 
 
 var app = builder.Build();

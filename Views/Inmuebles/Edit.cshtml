@@ -69,6 +69,7 @@
             <div class="form-group">
                 <label asp-for="PropietarioId" class="control-label">Propietario</label>
                 <select id="Propietario" asp-for="PropietarioId" class="form-control" name="PropietarioId">
+                    <option value="">Seleccione un propietario</option>
                     @foreach (var item in ltaPropietarios)
                     {
                         <option value="@item.Id" selected="@(item.Id == Model.PropietarioId)">
@@ -82,6 +83,7 @@
             <div class="form-group">
                 <label asp-for="TipoInmuebleId" class="control-label">Tipo de Inmueble</label>
                 <select asp-for="TipoInmuebleId" class="form-control">
+                    <option value="">Seleccione un tipo de inmueble</option>
                     @foreach (var item in ltaTiposInmueble)
                     {
                         <option value="@item.Id" selected="@(item.Id == Model.TipoInmuebleId)">
@@ -98,19 +100,6 @@
                 <span asp-validation-for="Observaciones" class="text-danger"></span>
             </div>
 
-            @if (!string.IsNullOrEmpty(Model.Portada))
-            {
-                <div class="form-group">
-                    <label>Imagen actual:</label><br />
-                    <img src="~/img/@Model.Portada" alt="Imagen del inmueble" class="img-fluid" style="max-width: 300px;" />
-                </div>
-            }
-
-            <div class="form-group">
-                <label asp-for="PortadaFile" class="control-label">Cambiar imagen</label>
-                <input asp-for="PortadaFile" type="file" class="form-control" />
-                <span asp-validation-for="PortadaFile" class="text-danger"></span>
-            </div>
 
             <div class="form-group">
                 <input type="submit" value="Guardar" class="btn btn-primary" />

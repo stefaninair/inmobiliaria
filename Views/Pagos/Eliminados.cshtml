@@ -1,0 +1,72 @@
+@model IEnumerable<Inmobiliaria.Models.Pago>
+
+@{
+    ViewData["Title"] = "Pagos Eliminados";
+}
+
+<h1>Pagos Eliminados</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a class="btn btn-primary" asp-action="Index">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Pagos Activos
+        </a>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Contrato</th>
+                    <th>Inquilino</th>
+                    <th>Monto</th>
+                    <th>Fecha Pago</th>
+                    <th>Periodo</th>
+                    <th>Eliminado Por</th>
+                    <th>Fecha Eliminación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>
+                            @item.Contrato?.Inmueble?.Direccion
+                            <br><small class="text-muted">Contrato #@item.ContratoId</small>
+                        </td>
+                        <td>@item.Contrato?.Inquilino?.Nombre @item.Contrato?.Inquilino?.Apellido</td>
+                        <td>@item.Monto.ToString("C")</td>
+                        <td>@item.FechaPago.ToShortDateString()</td>
+                        <td>@item.Periodo</td>
+                        <td>@item.EliminadoPorUser?.Nombre</td>
+                        <td>@item.EliminadoEn?.ToShortDateString()</td>
+                        <td>
+                            <a class="btn btn-info btn-sm" asp-action="Details" asp-route-id="@item.Id">
+                                <i class="fa-solid fa-eye"></i> Ver
+                            </a>
+                            @if (User.IsInRole("Administrador"))
+                            {
+                                <a class="btn btn-success btn-sm" asp-action="Restaurar" asp-route-id="@item.Id">
+                                    <i class="fa-solid fa-undo"></i> Restaurar
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-info-circle"></i>
+        No hay pagos eliminados.
+    </div>
+}

@@ -101,9 +101,19 @@ namespace Inmobiliaria.Services
                 SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
                        p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
                        p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
-                       c.MontoMensual, c.FechaInicio, c.FechaFin
+                       c.MontoMensual, c.FechaInicio, c.FechaFin,
+                       i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
+                       inq.Nombre as InquilinoNombre, inq.Apellido as InquilinoApellido, inq.Dni as InquilinoDni,
+                       u.Nombre as CreadoPorNombre, u.Apellido as CreadoPorApellido,
+                       u2.Nombre as AnuladoPorNombre, u2.Apellido as AnuladoPorApellido,
+                       u3.Nombre as EliminadoPorNombre, u3.Apellido as EliminadoPorApellido
                 FROM Pagos p
                 LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
+                LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
+                LEFT JOIN Usuarios u ON p.CreadoPorUserId = u.Id
+                LEFT JOIN Usuarios u2 ON p.AnuladoPorUserId = u2.Id
+                LEFT JOIN Usuarios u3 ON p.EliminadoPorUserId = u3.Id
                 WHERE p.Eliminado = 0 AND p.AnuladoEn IS NULL
                 ORDER BY p.FechaPago DESC";
 
@@ -123,9 +133,19 @@ namespace Inmobiliaria.Services
                 SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
                        p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
                        p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
-                       c.MontoMensual, c.FechaInicio, c.FechaFin
+                       c.MontoMensual, c.FechaInicio, c.FechaFin,
+                       i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
+                       inq.Nombre as InquilinoNombre, inq.Apellido as InquilinoApellido, inq.Dni as InquilinoDni,
+                       u.Nombre as CreadoPorNombre, u.Apellido as CreadoPorApellido,
+                       u2.Nombre as AnuladoPorNombre, u2.Apellido as AnuladoPorApellido,
+                       u3.Nombre as EliminadoPorNombre, u3.Apellido as EliminadoPorApellido
                 FROM Pagos p
                 LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
+                LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
+                LEFT JOIN Usuarios u ON p.CreadoPorUserId = u.Id
+                LEFT JOIN Usuarios u2 ON p.AnuladoPorUserId = u2.Id
+                LEFT JOIN Usuarios u3 ON p.EliminadoPorUserId = u3.Id
                 WHERE p.Eliminado = 1
                 ORDER BY p.EliminadoEn DESC";
 
@@ -136,6 +156,72 @@ namespace Inmobiliaria.Services
             }
 
             return pagos;
+        }
+
+        public async Task<List<Pago>> ObtenerPagosAnuladosPorContratoAsync(int contratoId)
+        {
+            var pagos = new List<Pago>();
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
+                       c.MontoMensual, c.FechaInicio, c.FechaFin,
+                       i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
+                       inq.Nombre as InquilinoNombre, inq.Apellido as InquilinoApellido, inq.Dni as InquilinoDni,
+                       u.Nombre as CreadoPorNombre, u.Apellido as CreadoPorApellido,
+                       u2.Nombre as AnuladoPorNombre, u2.Apellido as AnuladoPorApellido,
+                       u3.Nombre as EliminadoPorNombre, u3.Apellido as EliminadoPorApellido
+                FROM Pagos p
+                LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
+                LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
+                LEFT JOIN Usuarios u ON p.CreadoPorUserId = u.Id
+                LEFT JOIN Usuarios u2 ON p.AnuladoPorUserId = u2.Id
+                LEFT JOIN Usuarios u3 ON p.EliminadoPorUserId = u3.Id
+                WHERE p.ContratoId = @contratoId AND p.AnuladoEn IS NOT NULL AND p.Eliminado = 0
+                ORDER BY p.AnuladoEn DESC";
+
+            var parameters = new Dictionary<string, object> { { "@contratoId", contratoId } };
+
+            using var reader = ExecuteReader(query, parameters);
+            while (reader.Read())
+            {
+                pagos.Add(MapFromReader(reader));
+            }
+
+            return pagos;
+        }
+
+        public async Task<Pago> ObtenerPagoPorIdAsync(int pagoId)
+        {
+            var query = @"
+                SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
+                       p.CreadoPorUserId, p.CreadoEn, p.AnuladoPorUserId, p.AnuladoEn, p.MotivoAnulacion,
+                       p.Eliminado, p.EliminadoPorUserId, p.EliminadoEn,
+                       c.MontoMensual, c.FechaInicio, c.FechaFin,
+                       i.Direccion, i.Uso, i.Ambientes, i.Superficie, i.Precio, i.Disponible,
+                       inq.Nombre as InquilinoNombre, inq.Apellido as InquilinoApellido, inq.Dni as InquilinoDni,
+                       u.Nombre as CreadoPorNombre, u.Apellido as CreadoPorApellido,
+                       u2.Nombre as AnuladoPorNombre, u2.Apellido as AnuladoPorApellido,
+                       u3.Nombre as EliminadoPorNombre, u3.Apellido as EliminadoPorApellido
+                FROM Pagos p
+                LEFT JOIN Contratos c ON p.ContratoId = c.Id
+                LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
+                LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
+                LEFT JOIN Usuarios u ON p.CreadoPorUserId = u.Id
+                LEFT JOIN Usuarios u2 ON p.AnuladoPorUserId = u2.Id
+                LEFT JOIN Usuarios u3 ON p.EliminadoPorUserId = u3.Id
+                WHERE p.Id = @pagoId";
+
+            var parameters = new Dictionary<string, object> { { "@pagoId", pagoId } };
+
+            using var reader = ExecuteReader(query, parameters);
+            if (reader.Read())
+            {
+                return MapFromReader(reader);
+            }
+
+            return null;
         }
 
         public async Task<List<Pago>> ObtenerPagosPorContratoAsync(int contratoId)
@@ -212,7 +298,37 @@ namespace Inmobiliaria.Services
                     Id = reader.GetInt32("ContratoId"),
                     MontoMensual = reader.IsDBNull("MontoMensual") ? 0 : reader.GetDecimal("MontoMensual"),
                     FechaInicio = reader.IsDBNull("FechaInicio") ? DateTime.MinValue : reader.GetDateTime("FechaInicio"),
-                    FechaFin = reader.IsDBNull("FechaFin") ? DateTime.MinValue : reader.GetDateTime("FechaFin")
+                    FechaFin = reader.IsDBNull("FechaFin") ? DateTime.MinValue : reader.GetDateTime("FechaFin"),
+                    Inmueble = reader.IsDBNull("Direccion") ? null : new Inmueble
+                    {
+                        Direccion = reader.GetString("Direccion"),
+                        Uso = reader.IsDBNull("Uso") ? null : reader.GetString("Uso"),
+                        Ambientes = reader.IsDBNull("Ambientes") ? 0 : reader.GetInt32("Ambientes"),
+                        Superficie = reader.IsDBNull("Superficie") ? 0 : reader.GetDecimal("Superficie"),
+                        Precio = reader.IsDBNull("Precio") ? 0 : reader.GetDecimal("Precio"),
+                        Disponible = reader.IsDBNull("Disponible") ? false : reader.GetBoolean("Disponible")
+                    },
+                    Inquilino = reader.IsDBNull("InquilinoNombre") ? null : new Inquilino
+                    {
+                        Nombre = reader.GetString("InquilinoNombre"),
+                        Apellido = reader.GetString("InquilinoApellido"),
+                        Dni = reader.GetString("InquilinoDni")
+                    }
+                },
+                CreadoPorUser = reader.IsDBNull("CreadoPorNombre") ? null : new Usuario
+                {
+                    Nombre = reader.GetString("CreadoPorNombre"),
+                    Apellido = reader.GetString("CreadoPorApellido")
+                },
+                AnuladoPorUser = reader.IsDBNull("AnuladoPorNombre") ? null : new Usuario
+                {
+                    Nombre = reader.GetString("AnuladoPorNombre"),
+                    Apellido = reader.GetString("AnuladoPorApellido")
+                },
+                EliminadoPorUser = reader.IsDBNull("EliminadoPorNombre") ? null : new Usuario
+                {
+                    Nombre = reader.GetString("EliminadoPorNombre"),
+                    Apellido = reader.GetString("EliminadoPorApellido")
                 }
             };
         }

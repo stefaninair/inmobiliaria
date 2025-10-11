@@ -27,8 +27,7 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos/Details/5
         public IActionResult Details(int id)
         {
-            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
-            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            var pago = _pagoService.ObtenerPagoPorIdAsync(id).Result;
             if (pago == null)
             {
                 return NotFound();
@@ -172,6 +171,22 @@ namespace Inmobiliaria.Controllers
                 TempData["Error"] = $"Error al anular el pago: {ex.Message}";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Pagos/Eliminados
+        public IActionResult Eliminados()
+        {
+            var pagos = _pagoService.ObtenerPagosEliminadosAsync().Result;
+            return View(pagos);
+        }
+
+        // GET: Pagos/AnuladosPorContrato/5
+        public IActionResult AnuladosPorContrato(int contratoId)
+        {
+            var pagos = _pagoService.ObtenerPagosAnuladosPorContratoAsync(contratoId).Result;
+            var contrato = _repositorioContrato.ObtenerPorId(contratoId);
+            ViewBag.Contrato = contrato;
+            return View(pagos);
         }
     }
 }

@@ -77,34 +77,164 @@ namespace Inmobiliaria.Models
             using var connection = _dbConnection.GetConnection();
             connection.Open();
             
-            using var command = CreateCommand(query, connection, parameters);
-            command.ExecuteNonQuery();
-            
-            return GetLastInsertId(connection);
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Insertar el contrato
+                using var command = CreateCommand(query, connection, parameters);
+                command.Transaction = transaction;
+                command.ExecuteNonQuery();
+                
+                var contratoId = GetLastInsertId(connection);
+                
+                // Marcar el inmueble como no disponible
+                var updateInmuebleQuery = "UPDATE Inmuebles SET Disponible = 0 WHERE Id = @inmuebleId";
+                using var updateCommand = CreateCommand(updateInmuebleQuery, connection, new Dictionary<string, object> { { "@inmuebleId", c.InmuebleId } });
+                updateCommand.Transaction = transaction;
+                updateCommand.ExecuteNonQuery();
+                
+                transaction.Commit();
+                return contratoId;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public int Modificacion(Contrato c)
         {
-            var query = "UPDATE Contratos SET InmuebleId = @inmuebleId, InquilinoId = @inquilinoId, MontoMensual = @montoMensual, FechaInicio = @fechaInicio, FechaFin = @fechaFin WHERE Id = @id";
-            var parameters = new Dictionary<string, object>
+            using var connection = _dbConnection.GetConnection();
+            connection.Open();
+            
+            using var transaction = connection.BeginTransaction();
+            try
             {
-                { "@id", c.Id },
-                { "@inmuebleId", c.InmuebleId },
-                { "@inquilinoId", c.InquilinoId },
-                { "@montoMensual", c.MontoMensual },
-                { "@fechaInicio", c.FechaInicio },
-                { "@fechaFin", c.FechaFin }
-            };
+                // Obtener el InmuebleId anterior del contrato
+                var getInmuebleAnteriorQuery = "SELECT InmuebleId FROM Contratos WHERE Id = @id";
+                using var getCommand = CreateCommand(getInmuebleAnteriorQuery, connection, new Dictionary<string, object> { { "@id", c.Id } });
+                getCommand.Transaction = transaction;
+                var inmuebleAnteriorId = Convert.ToInt32(getCommand.ExecuteScalar());
+                
+                // Actualizar el contrato
+                var query = "UPDATE Contratos SET InmuebleId = @inmuebleId, InquilinoId = @inquilinoId, MontoMensual = @montoMensual, FechaInicio = @fechaInicio, FechaFin = @fechaFin WHERE Id = @id";
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@id", c.Id },
+                    { "@inmuebleId", c.InmuebleId },
+                    { "@inquilinoId", c.InquilinoId },
+                    { "@montoMensual", c.MontoMensual },
+                    { "@fechaInicio", c.FechaInicio },
+                    { "@fechaFin", c.FechaFin }
+                };
 
-            return ExecuteNonQuery(query, parameters);
+                using var updateCommand = CreateCommand(query, connection, parameters);
+                updateCommand.Transaction = transaction;
+                var result = updateCommand.ExecuteNonQuery();
+                
+                // Si cambió el inmueble, actualizar la disponibilidad de ambos inmuebles
+                if (inmuebleAnteriorId != c.InmuebleId)
+                {
+                    // Marcar el inmueble anterior como disponible (si no tiene otros contratos activos)
+                    var verificarContratosAnterior = @"
+                        SELECT COUNT(*) FROM Contratos 
+                        WHERE InmuebleId = @inmuebleId 
+                        AND Id != @contratoId 
+                        AND FechaTerminacionAnticipada IS NULL 
+                        AND FechaFin >= date('now')";
+                    
+                    using var verificarCommand = CreateCommand(verificarContratosAnterior, connection, 
+                        new Dictionary<string, object> { { "@inmuebleId", inmuebleAnteriorId }, { "@contratoId", c.Id } });
+                    verificarCommand.Transaction = transaction;
+                    var tieneOtrosContratos = Convert.ToInt32(verificarCommand.ExecuteScalar()) > 0;
+                    
+                    if (!tieneOtrosContratos)
+                    {
+                        var liberarInmuebleQuery = "UPDATE Inmuebles SET Disponible = 1 WHERE Id = @inmuebleId";
+                        using var liberarCommand = CreateCommand(liberarInmuebleQuery, connection, 
+                            new Dictionary<string, object> { { "@inmuebleId", inmuebleAnteriorId } });
+                        liberarCommand.Transaction = transaction;
+                        liberarCommand.ExecuteNonQuery();
+                    }
+                    
+                    // Marcar el nuevo inmueble como no disponible
+                    var ocuparInmuebleQuery = "UPDATE Inmuebles SET Disponible = 0 WHERE Id = @inmuebleId";
+                    using var ocuparCommand = CreateCommand(ocuparInmuebleQuery, connection, 
+                        new Dictionary<string, object> { { "@inmuebleId", c.InmuebleId } });
+                    ocuparCommand.Transaction = transaction;
+                    ocuparCommand.ExecuteNonQuery();
+                }
+                else
+                {
+                    // Si no cambió el inmueble, solo asegurar que esté marcado como no disponible
+                    var ocuparInmuebleQuery = "UPDATE Inmuebles SET Disponible = 0 WHERE Id = @inmuebleId";
+                    using var ocuparCommand = CreateCommand(ocuparInmuebleQuery, connection, 
+                        new Dictionary<string, object> { { "@inmuebleId", c.InmuebleId } });
+                    ocuparCommand.Transaction = transaction;
+                    ocuparCommand.ExecuteNonQuery();
+                }
+                
+                transaction.Commit();
+                return result;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public int Baja(int id)
         {
-            var query = "DELETE FROM Contratos WHERE Id = @id";
-            var parameters = new Dictionary<string, object> { { "@id", id } };
-
-            return ExecuteNonQuery(query, parameters);
+            using var connection = _dbConnection.GetConnection();
+            connection.Open();
+            
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Obtener el InmuebleId del contrato antes de eliminarlo
+                var getInmuebleQuery = "SELECT InmuebleId FROM Contratos WHERE Id = @id";
+                using var getCommand = CreateCommand(getInmuebleQuery, connection, new Dictionary<string, object> { { "@id", id } });
+                getCommand.Transaction = transaction;
+                var inmuebleId = Convert.ToInt32(getCommand.ExecuteScalar());
+                
+                // Eliminar el contrato
+                var query = "DELETE FROM Contratos WHERE Id = @id";
+                using var deleteCommand = CreateCommand(query, connection, new Dictionary<string, object> { { "@id", id } });
+                deleteCommand.Transaction = transaction;
+                var result = deleteCommand.ExecuteNonQuery();
+                
+                // Verificar si el inmueble tiene otros contratos activos
+                var verificarContratosQuery = @"
+                    SELECT COUNT(*) FROM Contratos 
+                    WHERE InmuebleId = @inmuebleId 
+                    AND FechaTerminacionAnticipada IS NULL 
+                    AND FechaFin >= date('now')";
+                
+                using var verificarCommand = CreateCommand(verificarContratosQuery, connection, 
+                    new Dictionary<string, object> { { "@inmuebleId", inmuebleId } });
+                verificarCommand.Transaction = transaction;
+                var tieneOtrosContratos = Convert.ToInt32(verificarCommand.ExecuteScalar()) > 0;
+                
+                // Si no tiene otros contratos activos, marcar como disponible
+                if (!tieneOtrosContratos)
+                {
+                    var liberarInmuebleQuery = "UPDATE Inmuebles SET Disponible = 1 WHERE Id = @inmuebleId";
+                    using var liberarCommand = CreateCommand(liberarInmuebleQuery, connection, 
+                        new Dictionary<string, object> { { "@inmuebleId", inmuebleId } });
+                    liberarCommand.Transaction = transaction;
+                    liberarCommand.ExecuteNonQuery();
+                }
+                
+                transaction.Commit();
+                return result;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public List<Contrato> ObtenerContratosActivosPorInmueble(int inmuebleId)
@@ -227,29 +357,52 @@ namespace Inmobiliaria.Models
             Console.WriteLine($"Repositorio - Terminando contrato {contratoId}:");
             Console.WriteLine($"Fecha: {fechaTerminacion}, Multa: {multa}, Motivo: {motivo}");
             
-            var query = @"
-                UPDATE Contratos 
-                SET FechaTerminacionAnticipada = @fechaTerminacion,
-                    Multa = @multa,
-                    MotivoTerminacion = @motivo
-                WHERE Id = @contratoId";
-            var parameters = new Dictionary<string, object>
+            using var connection = _dbConnection.GetConnection();
+            connection.Open();
+            
+            using var transaction = connection.BeginTransaction();
+            try
             {
-                { "@contratoId", contratoId },
-                { "@fechaTerminacion", fechaTerminacion },
-                { "@multa", multa ?? (object)DBNull.Value },
-                { "@motivo", motivo ?? (object)DBNull.Value }
-            };
+                // Obtener el InmuebleId del contrato antes de terminarlo
+                var getInmuebleQuery = "SELECT InmuebleId FROM Contratos WHERE Id = @contratoId";
+                using var getCommand = CreateCommand(getInmuebleQuery, connection, new Dictionary<string, object> { { "@contratoId", contratoId } });
+                getCommand.Transaction = transaction;
+                var inmuebleId = Convert.ToInt32(getCommand.ExecuteScalar());
+                
+                // Terminar el contrato
+                var query = @"
+                    UPDATE Contratos 
+                    SET FechaTerminacionAnticipada = @fechaTerminacion,
+                        Multa = @multa,
+                        MotivoTerminacion = @motivo
+                    WHERE Id = @contratoId";
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@contratoId", contratoId },
+                    { "@fechaTerminacion", fechaTerminacion },
+                    { "@multa", multa ?? (object)DBNull.Value },
+                    { "@motivo", motivo ?? (object)DBNull.Value }
+                };
 
-            Console.WriteLine($"Query: {query}");
-            foreach (var param in parameters)
-            {
-                Console.WriteLine($"  {param.Key}: {param.Value}");
+                using var updateCommand = CreateCommand(query, connection, parameters);
+                updateCommand.Transaction = transaction;
+                var result = updateCommand.ExecuteNonQuery();
+                
+                // Marcar el inmueble como disponible
+                var updateInmuebleQuery = "UPDATE Inmuebles SET Disponible = 1 WHERE Id = @inmuebleId";
+                using var updateInmuebleCommand = CreateCommand(updateInmuebleQuery, connection, new Dictionary<string, object> { { "@inmuebleId", inmuebleId } });
+                updateInmuebleCommand.Transaction = transaction;
+                updateInmuebleCommand.ExecuteNonQuery();
+                
+                transaction.Commit();
+                Console.WriteLine($"Resultado: {result} filas afectadas");
+                return result;
             }
-
-            var result = ExecuteNonQuery(query, parameters);
-            Console.WriteLine($"Resultado: {result} filas afectadas");
-            return result;
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         private Contrato MapFromReader(IDataReader reader)

@@ -19,6 +19,7 @@
             <div class="form-group">
                 <label asp-for="InmuebleId" class="control-label">Inmueble</label>
                 <select asp-for="InmuebleId" class="form-control">
+                    <option value="">Seleccionar un inmueble</option>
                     @foreach (var item in inmuebles)
                     {
                         <option value="@item.Id">@item.Direccion</option>

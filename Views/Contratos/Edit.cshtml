@@ -20,6 +20,7 @@
             <div class="form-group">
                 <label asp-for="InmuebleId" class="control-label">Inmueble</label>
                 <select asp-for="InmuebleId" class="form-control">
+                    <option value="">Seleccionar un inmueble</option>
                     @foreach (var item in inmuebles)
                     {
                         <option value="@item.Id" selected="@(item.Id == Model.InmuebleId)">
@@ -33,6 +34,7 @@
             <div class="form-group">
                 <label asp-for="InquilinoId" class="control-label">Inquilino</label>
                 <select id="Inquilino" asp-for="InquilinoId" class="form-control" name="InquilinoId">
+                    <option value="">Seleccione un inquilino</option>
                     @foreach (var item in inquilinos)
                     {
                         <option value="@item.Id" selected="@(item.Id == Model.InquilinoId)">

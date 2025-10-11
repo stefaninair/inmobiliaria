@@ -97,7 +97,7 @@ namespace Inmobiliaria.Controllers
             {
                 return NotFound();
             }
-            CargarListas();
+            CargarListasParaEdicion(contrato.InmuebleId);
             return View(contrato);
         }
 
@@ -124,7 +124,7 @@ namespace Inmobiliaria.Controllers
                     TempData["Error"] = $"Error al actualizar el contrato: {ex.Message}";
                 }
             }
-            CargarListas();
+            CargarListasParaEdicion(contrato.InmuebleId);
             return View(contrato);
         }
 
@@ -391,6 +391,36 @@ namespace Inmobiliaria.Controllers
         private void CargarListas()
         {
             var inmuebles = _repositorioInmueble.ObtenerDisponibles();
+            var inquilinos = _repositorioInquilino.ObtenerTodos();
+            
+            ViewBag.Inmuebles = inmuebles;
+            ViewBag.Inquilinos = inquilinos;
+        }
+
+        private void CargarListasParaEdicion(int inmuebleIdActual)
+        {
+            // Obtener inmuebles disponibles
+            var inmueblesDisponibles = _repositorioInmueble.ObtenerDisponibles();
+            
+            // Obtener el inmueble actual del contrato
+            var inmuebleActual = _repositorioInmueble.ObtenerPorId(inmuebleIdActual);
+            
+            // Crear lista combinada: inmueble actual + inmuebles disponibles
+            var inmuebles = new List<Inmueble>();
+            if (inmuebleActual != null)
+            {
+                inmuebles.Add(inmuebleActual); // Agregar el inmueble actual primero
+            }
+            
+            // Agregar inmuebles disponibles (excluyendo el actual si ya está en disponibles)
+            foreach (var inmueble in inmueblesDisponibles)
+            {
+                if (inmueble.Id != inmuebleIdActual)
+                {
+                    inmuebles.Add(inmueble);
+                }
+            }
+            
             var inquilinos = _repositorioInquilino.ObtenerTodos();
             
             ViewBag.Inmuebles = inmuebles;

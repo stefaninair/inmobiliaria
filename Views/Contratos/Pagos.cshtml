@@ -24,6 +24,9 @@
         <a class="btn btn-success" asp-action="CrearPago" asp-route-contratoId="@contrato?.Id">
             <i class="fa-solid fa-plus"></i> Nuevo Pago
         </a>
+        <a class="btn btn-warning" asp-controller="Pagos" asp-action="AnuladosPorContrato" asp-route-contratoId="@contrato?.Id">
+            <i class="fa-solid fa-ban"></i> Ver Pagos Anulados
+        </a>
     </div>
     <div class="col-md-6 text-right">
         <a class="btn btn-secondary" asp-action="Index">

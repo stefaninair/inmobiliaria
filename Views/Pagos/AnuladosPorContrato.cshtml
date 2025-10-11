@@ -1,0 +1,104 @@
+@model List<Inmobiliaria.Models.Pago>
+
+@{
+    ViewData["Title"] = "Pagos Anulados del Contrato";
+    var contrato = ViewBag.Contrato as Inmobiliaria.Models.Contrato;
+}
+
+<h1>Pagos Anulados del Contrato</h1>
+
+@if (contrato != null)
+{
+    <div class="alert alert-info">
+        <h4>Información del Contrato</h4>
+        <p><strong>ID:</strong> @contrato.Id</p>
+        <p><strong>Inmueble:</strong> @contrato.Inmueble?.Direccion</p>
+        <p><strong>Inquilino:</strong> @contrato.Inquilino?.Nombre @contrato.Inquilino?.Apellido</p>
+        <p><strong>Monto Mensual:</strong> $@contrato.MontoMensual.ToString("N2")</p>
+        <p><strong>Período:</strong> @contrato.FechaInicio.ToString("dd/MM/yyyy") - @contrato.FechaFin.ToString("dd/MM/yyyy")</p>
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a class="btn btn-primary" asp-controller="Contratos" asp-action="Pagos" asp-route-id="@contrato?.Id">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Pagos del Contrato
+        </a>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Resumen de Pagos Anulados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Total Anulados:</strong> @Model.Count
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Monto Total Anulado:</strong> $@Model.Sum(p => p.Monto).ToString("N2")
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Promedio:</strong> $@(Model.Average(p => p.Monto).ToString("N2"))
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Última Anulación:</strong> @Model.OrderByDescending(p => p.AnuladoEn).First().AnuladoEn?.ToString("dd/MM/yyyy")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Fecha Pago</th>
+                <th>Período</th>
+                <th>Monto</th>
+                <th>Observaciones</th>
+                <th>Creado por</th>
+                <th>Anulado por</th>
+                <th>Fecha Anulación</th>
+                <th>Motivo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Model)
+            {
+                <tr>
+                    <td>@pago.Id</td>
+                    <td>@pago.FechaPago.ToString("dd/MM/yyyy")</td>
+                    <td>@pago.Periodo</td>
+                    <td>$@pago.Monto.ToString("N2")</td>
+                    <td>@(pago.Observaciones ?? "-")</td>
+                    <td>@pago.CreadoPorUser?.Nombre @pago.CreadoPorUser?.Apellido</td>
+                    <td>@pago.AnuladoPorUser?.Nombre @pago.AnuladoPorUser?.Apellido</td>
+                    <td>@pago.AnuladoEn?.ToString("dd/MM/yyyy")</td>
+                    <td>@(pago.MotivoAnulacion ?? "-")</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a class="btn btn-info" asp-action="Details" asp-route-id="@pago.Id" title="Ver detalles">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="fa-solid fa-exclamation-triangle"></i>
+        No se encontraron pagos anulados para este contrato.
+    </div>
+}

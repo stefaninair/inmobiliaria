@@ -143,7 +143,13 @@ namespace Inmobiliaria.Models
                 FROM Inmuebles i
                 LEFT JOIN Propietarios p ON i.PropietarioId = p.Id
                 LEFT JOIN TiposInmueble t ON i.TipoInmuebleId = t.Id
-                WHERE i.Disponible = 1
+                WHERE i.Disponible = 1 
+                AND i.Id NOT IN (
+                    SELECT DISTINCT c.InmuebleId 
+                    FROM Contratos c 
+                    WHERE c.FechaTerminacionAnticipada IS NULL 
+                    AND c.FechaFin >= date('now')
+                )
                 ORDER BY i.Id";
 
             using var reader = ExecuteReader(query);
@@ -295,6 +301,49 @@ namespace Inmobiliaria.Models
             }
 
             return inmuebles;
+        }
+
+        public int ActualizarDisponibilidad(int inmuebleId, bool disponible)
+        {
+            var query = "UPDATE Inmuebles SET Disponible = @disponible WHERE Id = @id";
+            var parameters = new Dictionary<string, object>
+            {
+                { "@id", inmuebleId },
+                { "@disponible", disponible }
+            };
+
+            return ExecuteNonQuery(query, parameters);
+        }
+
+        public int SincronizarDisponibilidad()
+        {
+            // Marcar como no disponibles los inmuebles que tienen contratos activos
+            var queryOcupados = @"
+                UPDATE Inmuebles 
+                SET Disponible = 0 
+                WHERE Id IN (
+                    SELECT DISTINCT c.InmuebleId 
+                    FROM Contratos c 
+                    WHERE c.FechaTerminacionAnticipada IS NULL 
+                    AND c.FechaFin >= date('now')
+                )";
+            
+            var filasOcupados = ExecuteNonQuery(queryOcupados);
+            
+            // Marcar como disponibles los inmuebles que NO tienen contratos activos
+            var queryDisponibles = @"
+                UPDATE Inmuebles 
+                SET Disponible = 1 
+                WHERE Id NOT IN (
+                    SELECT DISTINCT c.InmuebleId 
+                    FROM Contratos c 
+                    WHERE c.FechaTerminacionAnticipada IS NULL 
+                    AND c.FechaFin >= date('now')
+                )";
+            
+            var filasDisponibles = ExecuteNonQuery(queryDisponibles);
+            
+            return filasOcupados + filasDisponibles;
         }
     }
 }

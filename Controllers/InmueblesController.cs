@@ -312,5 +312,21 @@ namespace Inmobiliaria.Controllers
             
             return View("Disponibles", inmueblesDisponibles);
         }
+
+        // GET: Inmuebles/Sincronizar
+        public IActionResult Sincronizar()
+        {
+            try
+            {
+                var filasActualizadas = _repositorio.SincronizarDisponibilidad();
+                TempData["Success"] = $"Sincronización completada. Se actualizaron {filasActualizadas} inmuebles.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al sincronizar: {ex.Message}";
+            }
+            
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

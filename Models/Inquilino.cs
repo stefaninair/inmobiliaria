@@ -17,7 +17,7 @@ namespace Inmobiliaria.Models
         public string Apellido { get; set; } = "";
         [Required]
         public string Dni { get; set; } = "";
-        public string Telefono { get; set; } = "";
+        public string? Telefono { get; set; }
         [Required, EmailAddress]
         public string Email { get; set; } = "";
 	}

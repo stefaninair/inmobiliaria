@@ -16,7 +16,7 @@ namespace Inmobiliaria.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<int> CrearPagoAsync(Pago pago)
+        public int CrearPago(Pago pago)
         {
             var query = @"
                 INSERT INTO Pagos (ContratoId, Monto, FechaPago, Periodo, Observaciones, CreadoPorUserId) 
@@ -41,7 +41,7 @@ namespace Inmobiliaria.Services
             return GetLastInsertId(connection);
         }
 
-        public async Task<bool> AnularPagoAsync(int pagoId, string motivo)
+        public bool AnularPago(int pagoId, string motivo)
         {
             var query = @"
                 UPDATE Pagos 
@@ -60,7 +60,7 @@ namespace Inmobiliaria.Services
             return rowsAffected > 0;
         }
 
-        public async Task<bool> EliminarPagoAsync(int pagoId)
+        public bool EliminarPago(int pagoId)
         {
             var query = @"
                 UPDATE Pagos 
@@ -78,7 +78,7 @@ namespace Inmobiliaria.Services
             return rowsAffected > 0;
         }
 
-        public async Task<bool> RestaurarPagoAsync(int pagoId)
+        public bool RestaurarPago(int pagoId)
         {
             var query = @"
                 UPDATE Pagos 
@@ -94,7 +94,7 @@ namespace Inmobiliaria.Services
             return rowsAffected > 0;
         }
 
-        public async Task<List<Pago>> ObtenerPagosActivosAsync()
+        public List<Pago> ObtenerPagosActivos()
         {
             var pagos = new List<Pago>();
             var query = @"
@@ -126,7 +126,7 @@ namespace Inmobiliaria.Services
             return pagos;
         }
 
-        public async Task<List<Pago>> ObtenerPagosEliminadosAsync()
+        public List<Pago> ObtenerPagosEliminados()
         {
             var pagos = new List<Pago>();
             var query = @"
@@ -158,7 +158,7 @@ namespace Inmobiliaria.Services
             return pagos;
         }
 
-        public async Task<List<Pago>> ObtenerPagosAnuladosPorContratoAsync(int contratoId)
+        public List<Pago> ObtenerPagosAnuladosPorContrato(int contratoId)
         {
             var pagos = new List<Pago>();
             var query = @"
@@ -192,7 +192,7 @@ namespace Inmobiliaria.Services
             return pagos;
         }
 
-        public async Task<Pago> ObtenerPagoPorIdAsync(int pagoId)
+        public Pago? ObtenerPagoPorId(int pagoId)
         {
             var query = @"
                 SELECT p.Id, p.ContratoId, p.Monto, p.FechaPago, p.Periodo, p.Observaciones, 
@@ -224,7 +224,7 @@ namespace Inmobiliaria.Services
             return null;
         }
 
-        public async Task<List<Pago>> ObtenerPagosPorContratoAsync(int contratoId)
+        public List<Pago> ObtenerPagosPorContrato(int contratoId)
         {
             var pagos = new List<Pago>();
             var query = @"
@@ -247,7 +247,7 @@ namespace Inmobiliaria.Services
             return pagos;
         }
 
-        public async Task<decimal> CalcularTotalPagosAsync(int contratoId)
+        public decimal CalcularTotalPagos(int contratoId)
         {
             var query = @"
                 SELECT COALESCE(SUM(Monto), 0) 
@@ -259,7 +259,7 @@ namespace Inmobiliaria.Services
             return Convert.ToDecimal(result);
         }
 
-        public async Task<bool> ExistePagoParaPeriodoAsync(int contratoId, string periodo)
+        public bool ExistePagoParaPeriodo(int contratoId, string periodo)
         {
             var query = @"
                 SELECT COUNT(*) 

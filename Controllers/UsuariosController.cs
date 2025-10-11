@@ -116,7 +116,7 @@ namespace Inmobiliaria.Controllers
                 foreach (var key in ModelState.Keys)
                 {
                     var state = ModelState[key];
-                    if (state.Errors.Any())
+                    if (state?.Errors.Any() == true)
                     {
                         Console.WriteLine($"Error en {key}: {string.Join(", ", state.Errors.Select(e => e.ErrorMessage))}");
                     }

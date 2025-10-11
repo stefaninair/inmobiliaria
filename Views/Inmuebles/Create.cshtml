@@ -36,13 +36,13 @@
 
             <div class="form-group">
                 <label asp-for="Superficie" class="control-label"></label>
-                <input asp-for="Superficie" class="form-control" />
+                <input asp-for="Superficie" class="form-control" step="0.01" min="0" type="number" lang="en" />
                 <span asp-validation-for="Superficie" class="text-danger"></span>
             </div>
 
             <div class="form-group">
                 <label asp-for="Precio" class="control-label"></label>
-                <input asp-for="Precio" class="form-control" />
+                <input asp-for="Precio" class="form-control" step="0.01" min="0" type="number" lang="en" />
                 <span asp-validation-for="Precio" class="text-danger"></span>
             </div>
 
@@ -55,13 +55,13 @@
 
             <div class="form-group">
                 <label asp-for="Latitud" class="control-label"></label>
-                <input asp-for="Latitud" class="form-control" />
+                <input asp-for="Latitud" class="form-control" step="0.01" type="number" lang="en" />
                 <span asp-validation-for="Latitud" class="text-danger"></span>
             </div>
 
             <div class="form-group">
                 <label asp-for="Longitud" class="control-label"></label>
-                <input asp-for="Longitud" class="form-control" />
+                <input asp-for="Longitud" class="form-control" step="0.01" type="number" lang="en" />
                 <span asp-validation-for="Longitud" class="text-danger"></span>
             </div>
 
@@ -132,6 +132,25 @@
                         };
                     }
                 }
+            });
+
+            // Función para convertir comas a puntos en campos numéricos
+            function convertCommaToDot(input) {
+                if (input.value.includes(',')) {
+                    input.value = input.value.replace(',', '.');
+                }
+            }
+
+            // Aplicar conversión a campos numéricos
+            $('#Superficie, #Precio, #Latitud, #Longitud').on('input', function() {
+                convertCommaToDot(this);
+            });
+
+            // Validación adicional antes del envío
+            $('form').on('submit', function() {
+                $('#Superficie, #Precio, #Latitud, #Longitud').each(function() {
+                    convertCommaToDot(this);
+                });
             });
         });
     </script>

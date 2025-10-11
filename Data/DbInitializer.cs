@@ -233,14 +233,14 @@ namespace Inmobiliaria.Data
                     using var insertCommand = connection.CreateCommand();
                     insertCommand.CommandText = insertQuery;
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@direccion", inmueble.Direccion));
-                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@uso", inmueble.Uso));
+                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@uso", inmueble.Uso ?? (object)DBNull.Value));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@ambientes", inmueble.Ambientes));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@superficie", inmueble.Superficie));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@precio", inmueble.Precio));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@disponible", inmueble.Disponible));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@propietarioId", inmueble.PropietarioId));
                     insertCommand.Parameters.Add(CreateParameter(insertCommand, "@tipoInmuebleId", inmueble.TipoInmuebleId));
-                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@observaciones", inmueble.Observaciones));
+                    insertCommand.Parameters.Add(CreateParameter(insertCommand, "@observaciones", inmueble.Observaciones ?? (object)DBNull.Value));
                     insertCommand.ExecuteNonQuery();
 
                     var lastIdQuery = dbConnection.GetLastInsertIdQuery();

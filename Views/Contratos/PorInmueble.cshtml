@@ -34,7 +34,41 @@
     <div class="alert alert-info">
         <i class="fa-solid fa-info-circle"></i> Mostrando contratos del inmueble seleccionado.
     </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Información del Inmueble</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Inmuebles != null)
+                    {
+                        var inmuebleSeleccionado = ((IList<Inmobiliaria.Models.Inmueble>)ViewBag.Inmuebles).FirstOrDefault(i => i.Id == ViewBag.InmuebleSeleccionado);
+                        if (inmuebleSeleccionado != null)
+                        {
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Dirección:</strong> @inmuebleSeleccionado.Direccion
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Uso:</strong> @inmuebleSeleccionado.Uso
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Ambientes:</strong> @inmuebleSeleccionado.Ambientes
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Precio:</strong> $@inmuebleSeleccionado.Precio.ToString("N2")
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 }
+
 
 
 

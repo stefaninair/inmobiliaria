@@ -250,7 +250,7 @@ namespace Inmobiliaria.Models
                 LEFT JOIN Inmuebles i ON c.InmuebleId = i.Id
                 LEFT JOIN Propietarios p ON i.PropietarioId = p.Id
                 LEFT JOIN Inquilinos inq ON c.InquilinoId = inq.Id
-                WHERE c.InmuebleId = @inmuebleId AND c.FechaFin >= date('now')
+                WHERE c.InmuebleId = @inmuebleId
                 ORDER BY c.FechaInicio DESC";
             var parameters = new Dictionary<string, object> { { "@inmuebleId", inmuebleId } };
 

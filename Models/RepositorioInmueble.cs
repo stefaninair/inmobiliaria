@@ -61,7 +61,7 @@ namespace Inmobiliaria.Models
             var parameters = new Dictionary<string, object>
             {
                 { "@direccion", i.Direccion },
-                { "@uso", i.Uso },
+                { "@uso", i.Uso ?? (object)DBNull.Value },
                 { "@ambientes", i.Ambientes },
                 { "@superficie", i.Superficie },
                 { "@precio", i.Precio },
@@ -87,7 +87,7 @@ namespace Inmobiliaria.Models
             {
                 { "@id", i.Id },
                 { "@direccion", i.Direccion },
-                { "@uso", i.Uso },
+                { "@uso", i.Uso ?? (object)DBNull.Value },
                 { "@ambientes", i.Ambientes },
                 { "@superficie", i.Superficie },
                 { "@precio", i.Precio },

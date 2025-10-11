@@ -20,14 +20,14 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos
         public IActionResult Index()
         {
-            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
+            var pagos = _pagoService.ObtenerPagosActivos();
             return View(pagos);
         }
 
         // GET: Pagos/Details/5
         public IActionResult Details(int id)
         {
-            var pago = _pagoService.ObtenerPagoPorIdAsync(id).Result;
+            var pago = _pagoService.ObtenerPagoPorId(id);
             if (pago == null)
             {
                 return NotFound();
@@ -52,7 +52,7 @@ namespace Inmobiliaria.Controllers
             {
                 try
                 {
-                    _pagoService.CrearPagoAsync(pago).Wait();
+                    _pagoService.CrearPago(pago);
                     TempData["Success"] = "Pago creado exitosamente.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -69,8 +69,7 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos/Edit/5
         public IActionResult Edit(int id)
         {
-            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
-            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            var pago = _pagoService.ObtenerPagoPorId(id);
             if (pago == null)
             {
                 return NotFound();
@@ -111,8 +110,7 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos/Delete/5
         public IActionResult Delete(int id)
         {
-            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
-            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            var pago = _pagoService.ObtenerPagoPorId(id);
             if (pago == null)
             {
                 return NotFound();
@@ -127,7 +125,7 @@ namespace Inmobiliaria.Controllers
         {
             try
             {
-                _pagoService.EliminarPagoAsync(id).Wait();
+                _pagoService.EliminarPago(id);
                 TempData["Success"] = "Pago eliminado exitosamente.";
             }
             catch (Exception ex)
@@ -140,15 +138,14 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos/PorContrato/5
         public IActionResult PorContrato(int contratoId)
         {
-            var pagos = _pagoService.ObtenerPagosPorContratoAsync(contratoId).Result;
+            var pagos = _pagoService.ObtenerPagosPorContrato(contratoId);
             return View(pagos);
         }
 
         // GET: Pagos/Anular/5
         public IActionResult Anular(int id)
         {
-            var pagos = _pagoService.ObtenerPagosActivosAsync().Result;
-            var pago = pagos.FirstOrDefault(p => p.Id == id);
+            var pago = _pagoService.ObtenerPagoPorId(id);
             if (pago == null)
             {
                 return NotFound();
@@ -163,7 +160,7 @@ namespace Inmobiliaria.Controllers
         {
             try
             {
-                _pagoService.AnularPagoAsync(id, motivo).Wait();
+                _pagoService.AnularPago(id, motivo);
                 TempData["Success"] = "Pago anulado exitosamente.";
             }
             catch (Exception ex)
@@ -176,14 +173,14 @@ namespace Inmobiliaria.Controllers
         // GET: Pagos/Eliminados
         public IActionResult Eliminados()
         {
-            var pagos = _pagoService.ObtenerPagosEliminadosAsync().Result;
+            var pagos = _pagoService.ObtenerPagosEliminados();
             return View(pagos);
         }
 
         // GET: Pagos/AnuladosPorContrato/5
         public IActionResult AnuladosPorContrato(int contratoId)
         {
-            var pagos = _pagoService.ObtenerPagosAnuladosPorContratoAsync(contratoId).Result;
+            var pagos = _pagoService.ObtenerPagosAnuladosPorContrato(contratoId);
             var contrato = _repositorioContrato.ObtenerPorId(contratoId);
             ViewBag.Contrato = contrato;
             return View(pagos);

@@ -25,7 +25,7 @@ namespace Inmobiliaria.Models
 
             [Display(Name = "Teléfono")]
             [RegularExpression(@"^\d{10,15}$", ErrorMessage = "El teléfono debe contener solo números y tener entre 10 y 15 dígitos")]
-            public string Telefono { get; set; } = "";
+            public string? Telefono { get; set; }
 
             [Required, EmailAddress]
             public string Email { get; set; } = "";

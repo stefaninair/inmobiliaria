@@ -22,14 +22,14 @@ namespace Inmobiliaria.Models
 		[Required(ErrorMessage = "El uso es requerido")]
 		[StringLength(50, ErrorMessage = "El uso no puede exceder los 50 caracteres")]
 		[Display(Name = "Uso")]
-		public string Uso { get; set; } = "";
+		public string? Uso { get; set; }
 
 		[Required(ErrorMessage = "La cantidad de ambientes es requerida")]
 		[Range(1, 20, ErrorMessage = "Los ambientes deben estar entre 1 y 20")]
 		[Display(Name = "Ambientes")]
 		public int Ambientes { get; set; }
 
-		[Range(1, 10000, ErrorMessage = "La superficie debe estar entre 1 y 10000 m²")]
+		[Range(0.01, 10000, ErrorMessage = "La superficie debe estar entre 0.01 y 10000 m²")]
 		[Display(Name = "Superficie (m²)")]
 		public decimal? Superficie { get; set; }
 
@@ -58,7 +58,12 @@ namespace Inmobiliaria.Models
 		public string? Observaciones { get; set; }
 
 		// Campos legacy para compatibilidad
+		[Range(-90, 90, ErrorMessage = "La latitud debe estar entre -90 y 90")]
+		[Display(Name = "Latitud")]
 		public decimal Latitud { get; set; }
+		
+		[Range(-180, 180, ErrorMessage = "La longitud debe estar entre -180 y 180")]
+		[Display(Name = "Longitud")]
 		public decimal Longitud { get; set; }
 		public string? Portada { get; set; }
 		[NotMapped]//Para EF

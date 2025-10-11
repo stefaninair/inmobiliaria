@@ -14,7 +14,7 @@ namespace Inmobiliaria.Data
             _dbConnection = dbConnection;
         }
 
-        protected int ExecuteNonQuery(string query, Dictionary<string, object> parameters = null)
+        protected int ExecuteNonQuery(string query, Dictionary<string, object>? parameters = null)
         {
             using var connection = _dbConnection.GetConnection();
             connection.Open();
@@ -23,7 +23,7 @@ namespace Inmobiliaria.Data
             return command.ExecuteNonQuery();
         }
 
-        protected object ExecuteScalar(string query, Dictionary<string, object> parameters = null)
+        protected object? ExecuteScalar(string query, Dictionary<string, object>? parameters = null)
         {
             using var connection = _dbConnection.GetConnection();
             connection.Open();
@@ -32,7 +32,7 @@ namespace Inmobiliaria.Data
             return command.ExecuteScalar();
         }
 
-        protected IDataReader ExecuteReader(string query, Dictionary<string, object> parameters = null)
+        protected IDataReader ExecuteReader(string query, Dictionary<string, object>? parameters = null)
         {
             var connection = _dbConnection.GetConnection();
             connection.Open();
@@ -41,7 +41,7 @@ namespace Inmobiliaria.Data
             return command.ExecuteReader();
         }
 
-        protected IDbCommand CreateCommand(string query, IDbConnection connection, Dictionary<string, object> parameters = null)
+        protected IDbCommand CreateCommand(string query, IDbConnection connection, Dictionary<string, object>? parameters = null)
         {
             IDbCommand command = _dbConnection.GetDatabaseType() switch
             {
